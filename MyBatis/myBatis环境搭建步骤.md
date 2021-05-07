@@ -60,7 +60,7 @@
 
 ### 第三步：配置mapper映射文件
 
-#### 这里的映射文件是用来写sql语句的，一般在mapper包下创建这个文件，文件名叫xxxMapper.xml。
+**这里的映射文件是用来写sql语句的，一般在mapper包下创建这个文件，文件名叫xxxMapper.xml。**
 
 
 
