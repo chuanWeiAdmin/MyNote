@@ -105,7 +105,7 @@ SqlSession session= sqlSessionFactory.openSession();
 Student s = session.selectOne("Student.getById","A001");
 System.out.println(s);
 
-//使用完要将回话关闭
+//使用完要将会话关闭
 session.close();
 ```
 

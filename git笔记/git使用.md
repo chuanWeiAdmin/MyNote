@@ -124,7 +124,7 @@ git的工作流程一般是这样的：
 |                                  | git  restore  文件                              |
 |                                  |                                                 |
 | git log                          | 查看提交log                                     |
-|                                  |                                                 |
+| git config --list                | 以列表的形式查看配置                            |
 |                                  |                                                 |
 |                                  |                                                 |
 |                                  |                                                 |
