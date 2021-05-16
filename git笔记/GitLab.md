@@ -65,7 +65,7 @@ gitlab-ctl start------->启动gitlab
 1. 切换目录  cd /opt/gitlab/bin
 2.  执行 ：sudo gitlab-rails console production 命令 开始初始化密码![修改gitlab管理员密码1](E:\破烂\笔记\MyNote\资源\修改gitlab管理员密码1.png)
 3. 在irb(main):001:0> 后面通过 **u=User.where(id:1).first** 来查找与切换账号（User.all 可以查看所有用户）![修改gitlab管理员密码2](E:\破烂\笔记\MyNote\资源\修改gitlab管理员密码2.png)
-4. 通过**u.password='12345678'**设置密码为12345678(这里的密码看自己喜欢)：![修改gitlab管理员密码3](E:\破烂\笔记\MyNote\资源\修改gitlab管理员密码3.png)
+4. 通过**u.password='123123'**设置密码为12345678(这里的密码看自己喜欢)：![修改gitlab管理员密码3](E:\破烂\笔记\MyNote\资源\修改gitlab管理员密码3.png)
 5. 通过**u.password_confirmation='12345678'** 再次确认密码
 6. 通过 **u.save! **  进行保存（切记切记 后面的 !）
 7. 如果看到上面截图中的*true* ，恭喜你已经成功了，执行 *exit* 退出当前设置流程即可。
