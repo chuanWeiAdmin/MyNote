@@ -166,7 +166,7 @@ git的工作流程一般是这样的：
 | git stash apply stash@{0}               | 恢复指定储藏内容（后面的东西通过git stash list查看）         |
 | git cherry-pick 4c805e2                 | 复制一个特定的提交到当前分支                                 |
 |                                         |                                                              |
-|                                         |                                                              |
+| git reset --hard test                   | 在主分支时，将主分支重置为test分支                           |
 
 
 
