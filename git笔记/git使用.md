@@ -155,7 +155,20 @@ git的工作流程一般是这样的：
 | git   branch   -d     "分支名"          | 删除分支                                                     |
 | git   merge   --no-ff    "分支名"       | 合并分支（将分支拉取到当前分支）                             |
 | git  merge  --no-ff -m" 消息"  "分支名" | 合并分支，并添加消息                                         |
+|                                         |                                                              |
+| **添加标签相关：**                      |                                                              |
+| git   tag                               | 查看所有版本号                                               |
 | git    tag   v1.0                       | 设置版本号                                                   |
+| git   tag   v1.0   98ee1de              | 指定某一次提交的版本号                                       |
+| git tag -a v0.1 -m "消息" 1094adb       | 创建带有说明的标签，用`-a`指定标签名，`-m`指定说明文字       |
+| git   show   <tagname>                  | 查看指定版本号的信息                                         |
+| **删除标签相关：**                      |                                                              |
+| git  tag   -d   v0.1                    | 删除标签                                                     |
+| git push origin v1.0                    | 将标签推送到远程库中                                         |
+| git  push  origin  --tags               | 一次性推送所有tag到远程库                                    |
+| git push origin :refs/tags/v0.9         | 删除远程库中的标签（先删本地，再删远程）                     |
+|                                         | 注：tag是跟commit相关的 一个commit出现在多个分支中，都有tag  |
+|                                         |                                                              |
 | git  lg                                 | 查看日志（设置完别名）                                       |
 |                                         |                                                              |
 | git stash                               | 出现bug要更改但是不想提交的时候通过这个将分支***将当前工作现场“储藏”起来*** |
@@ -166,7 +179,11 @@ git的工作流程一般是这样的：
 | git stash apply stash@{0}               | 恢复指定储藏内容（后面的东西通过git stash list查看）         |
 | git cherry-pick 4c805e2                 | 复制一个特定的提交到当前分支                                 |
 |                                         |                                                              |
-| git reset --hard test                   | 在主分支时，将主分支重置为test分支                           |
+| git reset --hard test                   | 在主分支时，将主分支重置为test分支（强制覆盖）               |
+|                                         |                                                              |
+|                                         |                                                              |
+
+
 
 
 
