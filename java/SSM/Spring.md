@@ -202,13 +202,14 @@ classpath表示类路径位置（从class文件下开始找，编译前从resour
 - @Repository   **（用于持久层）表示创建dao对象**
 - @Service  **用于业务层，可以添加事务管理**
 - @Controller  **用于控制器，接收数据显示处理结果**
+- @value  **为简单类型赋值**
+- @Autowired  **为引用类型赋值，Spring中带的注解**
+- @Resource  **为引用类型赋值，JDK中带的注解**
 - ......
 
 #### 3.Component注解的使用
 
-
-
-Component用来创建对象等同于<bean> 
+**Component用来创建对象等同于<bean>** 
 
 - 属性：value 对象的名称，也就是bean中的id值（唯一的）
 - 位置：在类的上面
@@ -233,4 +234,150 @@ public class Student{
 
 
 #### 4.使用注解进行属性赋值
+
+##### （1）简单类型  @value
+
+*位置*：
+
+1. 属性上，无需set方法  （**推荐使用**）
+2. set方法上
+
+```java
+public class Student{
+    
+    @value(value="张三")
+    private String name;
+    
+    @value(value="12")
+    private int age;
+
+    //******************************************************
+    
+    @value(value="张三") //不推荐
+    public void setName(String name){
+        this.name=name;
+    }
+    @value(value="12") //不推荐
+    public void setAge(int age){
+        this.age=age;
+    }
+    
+}
+```
+
+
+
+##### （2）引用类型通过注解的方式进行赋值
+
+1. @Autowired  自动注入 **默认的规则是byType**
+
+   - **位置**：
+
+     1. 属性上，**无需set方法**
+     2. set方法上
+
+   - byType：**默认类型**
+
+     ```java
+     public class Student{
+         @value(value="张三")
+         private String name;
+         
+         @value(value="12")
+         private int age;
+         
+         @Autowired
+         private School school;
+         //Spring 会自动检索容器中国类型为School的类型
+     }
+     ```
+
+   - byName: 要加上@Qualifier(value="bean中的ID")
+
+     ```java
+     public class Student{
+         @value(value="张三")
+         private String name;
+         
+         @value(value="12")
+         private int age;
+         
+         //一下两个没有先后顺序
+         @Autowired
+         @Qualifier(name="bean中的id")
+         private School school;
+     }
+     ```
+
+   - Autowired 的属性
+
+     - required=true ：引用类型赋值失败时，程序报错，并终止程序
+     - required=false：引用类型赋值失败时，程序正常执行，引用类型数据为null
+
+   - **注:** byType 默认一个注解，byName 两个注解加Qualifier
+
+2. @Resource   来自JDK中的注解
+
+   支持   byName(***默认***)   byType 
+
+   **位置：**
+
+   - 在属性定义上面，无需set     ***推荐使用***
+   - 在set方法上面
+
+   注：Resource   是**先使用byName再使用byType**
+
+   ```java
+   //只通过byName方法赋值
+   @Resources(name="bean中的id")
+   private School school;
+   ```
+
+****
+
+### 五.AOP 面向对象编程
+
+#### （1）.怎么理解面向切面编程
+
+1. 需要在分析项目功能时，找出切面
+2. 合理安排执行时间（**在方法前，在方法后**）
+3. 合理安排切面位置，在哪个类，哪个方法增强
+
+#### （2）术语
+
+1. Aspect  切面：表示增强的功能，为业务功能
+2. JoinPoint  连接点：连接业务和切面的位置，（**某类中的业务方法**）
+3. PointCut  切入点  : 指连接点方法的集合，多个方法
+4. 目标对象：各哪个类的方法增加功能
+5. Advice  通知： 通知表示切面功能执行的时机
+
+***一个切面的三要素***
+
+- 切面的功能代码<------>切面要干什么
+- 切面的执行位置<------>使用PointCut表示，切面的执行位置
+- 切面的执行时间<------>使用Advice 表示执行时间，***在目标方法之前，在目标方法之后***
+
+#### （3）aop的实现
+
+**注：aop是一个规范，动态代理的规范化，是一个标准**
+
+1. Spring 的实现，主要用在事务中使用了aop （**很少使用，比较笨重**）
+
+2. aspectJ：一个开源的专门做aop的框架（最牛逼的框架）
+
+   ***Spring 中集成了aspectJ，通过Spring 来使用aspectJ***
+
+   aspectJ框架实现aop的两种方式
+
+   - 使用xml文件：**配置全局事务**
+   - 使用注解（**一般使用注解**）aspectJ有五个常用注解
+
+#### （4）aspectJ的使用
+
+1. 切面的执行时间，规范中叫做Advice（通知，增强）
+   1. @Before
+   2. @AfterReturning
+   3. @Around
+   4. @AfterThrowing
+   5. @After
 
