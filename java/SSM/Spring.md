@@ -611,6 +611,18 @@ public class {
 
 #### （11）AspectJ的默认实现方式
 
+- 如果有接口使用的是JDK
+
+- 如果么有接口使用的是CGLIB
+
+- 有接口使用CGLIB的方式
+
+  
+
+```xml
+<aop:aspectj-autopoxy proxy-target-alsss="true"/>
+```
+
 
 
 ### fsfssf
