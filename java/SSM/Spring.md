@@ -375,9 +375,279 @@ public class Student{
 #### （4）aspectJ的使用
 
 1. 切面的执行时间，规范中叫做Advice（通知，增强）
-   1. @Before
+   1. @Before   前置通知
    2. @AfterReturning
    3. @Around
    4. @AfterThrowing
    5. @After
+   
+2. 切面执行位置：切入点表达式 execution( *..*.*(..)) 
+
+   表达式中的位置 （访问修饰符<可省>     返回值     包名.类名.方法名(参数列表)     抛出异常<可省>  )
+
+   全通配写法：\*..\*.\*(..) 
+
+   通配符含义：
+
+   -   \*   任意个字符
+   -   . .  放到参数中就是任意多个参数，或任意多个包
+
+#### （5）aspectJ 实现aop的基本步骤
+
+1. 新建Maven项目
+
+2. 加入依赖
+
+   - Spring 依赖
+   - aspectJ 依赖
+   - Junit  单元测试依赖
+
+3. 创建目标类：要有接口和他的实现类，（要做的是就行写，业务逻辑）
+
+4. 创建切面类，普通的一个类（**但是要加注解**）
+
+   - 在类上面加  @Aspect
+   - 在类中定义方法，方法就是要执行的切面（**要在目标中扩展的方法**），在方法上加入@Before（前置通知）并指定切入点表达式
+
+5. 创建Spring的配置文件，声明对象，将对象统一交给容器管理
+
+   - 声明目标对象
+
+   - 声明切面类对象
+
+   - 声明aspectJ框架中的自动代理生成器标签，用来完成代理对象的自动创建
+
+     ```xml
+     <beans   ...>
+         <!--声明aspectJ 框架中的自动代理生成器-->
+         <aop:aspectJ-autoproxy/>
+         <!--  一般打一个aspect 就出来了-->
+     </beans>
+     ```
+
+     
+
+6. 创建测试类，从Spring 容器中获取对象，通过geBean之后就是代理类，通过代理类生成代理对象实现aop的功能
+
+#### （6）@Before 前置通知
+
+- 属性  value  值是切入点表达式，表示切面能执行 的位置
+
+- 位置： 方法的上面
+
+- 特点
+
+  1. 在目标执行之前执行
+  2. 不改变目标方法执行的结果
+  3. 不影响目标方法的执行
+
+  ```java
+  @Aspect
+  public class myAspect{    
+      //这里的方法一定要是实现类中的方法
+      @Before(value ="execution(public void xx.xx.类名。方法名(String,..类型))")
+      public voic myTestAspect01(){
+          System.out.println("这里是要执行的切面方法逻辑")；
+      }
+  }
+  ```
+
+- 注：在@Aspect修饰的类中定义的方法要求
+
+  1. 公共方法 public
+  2. 方法没有返回值
+  3. 方法的名称自定义
+  4. 方法可以有参数，可以没有参数，参数不是自定义的，有几个可以使用
+  5. 切入点表达式一定要是实现类中的方法
+
+- ***在测试方法中使用Spring 容器+Aspect事项AOP功能***
+
+  ```java
+  public class Test{
+      @Test
+      public void myTest01(){
+          String config="applicationContext.xml";//在resource下的Spring 配置文件
+          ApplicationContext cxt=new ClassPathXmlApplicationContext(config);
+  
+          //这个地方一定要写增强方法的接口类型
+          SomeService ss=(SomeService) cxt.getBean("目标方法的ID");
+          
+          //这个时候使用的方法就是增强过的方法了
+          ss.doSome();
+      }
+  }
+  
+  ```
+
+  
+
+#### （7）@Before 中可以添加的参数
+
+JoinPoint:业务方法，要加入业务功能的业务方法
+
+作用：可以在通知方法中获取目标方法执行时的信息
+
+​	例：获得方法的实参...
+
+```java
+@Aspect
+public class {
+    @Befor(value="execution(* ..(..))")
+    public void myBefore(JoinPoint jp){
+        //一定要注意 JoinPoint 两个开头都是大写的
+        jp.getSignature();//获得方法的完全定义
+        jp.getSignature().getName();//获得方法名称
+         Object[] args = jp.getArgs();
+    }
+}
+```
+
+
+
+#### （8）@AfterReturning()后置通知
+
+通知方法定义的前提要求：
+
+- 公共方法 public
+- 方法没有返回值
+- 方法名称自定义
+- 方法有参数，推荐使用Object ，参数名称自定义
+
+@AfterReturning
+
+- 属性
+
+  - value：切面表达式
+  - returning: 自定义的变量，表示目标方法的返回值，**自定义的名必须和通知方法的形参名一样**
+
+- 位置：方法定义之上
+
+- 特点：
+
+  - 在目标方法之后执行
+  - 能获得目标方法的返回值，可以根据值做不同的处理
+  - 可以修改返回值
+
+  ```java
+  @Aspect
+  public class{
+  	@AfterReturning(value="execution(void doSome(..))",returning="obj")  
+      public void muAfterReturning(Object obj){
+          //obj就是方法的返回值，可以对返回值作一些判断
+  		System.out.println("方法的返回值是"+obj);
+          //更改还要验证
+      }
+  }
+  ```
+
+  
+
+#### （9）@Around环绕通知
+
+通知方法的定义格式
+
+- 公共的方法
+- 必须有一个返回值，推荐使用object
+- 方法名称自定义
+- 方法有参数，固定参数 ProcedingJoinPoint
+
+环绕通知
+
+- 属性value 切入点表达式
+
+- 位置：在方法的上面
+
+- 特点：
+
+  - 功能最强的通知
+  - 在目标方法前后都能增强
+  - 控制目标方法是否被调用
+  - 修改原来目标方法的执行结果，影响调用结果
+
+- 环绕通知等同于JDK动态代理中的InvocationHandler接口
+
+- 参数ProceedingJoinPoint等同于Method方法，作用的执行目标方法
+
+- 返回值：就是目标方法的执行结果，可以被修改
+
+  ```java
+  @Aspect
+  public class{
+  	@Around(value="execution(void doSome(..))")
+      public Object myAround(ProceedingJoinPoint pjp){
+          //ProceedingJoinPoint 继承了 JoinPoint 
+          Object [] args = pjp.getArgs();  //获得全部参数
+          //如果目标方法有参数，也是这样写
+          Object result =pjp.proceed();
+          //可以改变返回的值
+          return result;
+      }
+  }
+  ```
+
+  
+
+#### （10）@Pointcut定义和管理切入点
+
+**注：如果项目中有多个切入点是重复的可以使用Pointcut管理切入点**
+
+- 属性：value 切入点表达式
+
+- 位置：在自定义的方法上
+
+- 特点：使用@Pointcut在一个方法上，在个方法名就是切入点表达式的别名，在其他通知中可以使用这个别名代替表达式
+
+  ```java
+  @Aspect
+  public class{
+      @Pointcut(value="execution(void doSome(..))")
+      public void mypc(){}
+      
+      //这个名字一定要有“（）”
+      @Before(value="mypc()")
+      public void myBefore(){}
+  }
+  ```
+
+#### （11）AspectJ的默认实现方式
+
+
+
+### fsfssf
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
