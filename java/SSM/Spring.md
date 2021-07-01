@@ -625,11 +625,95 @@ public class {
 
 
 
-### fsfssf
+### 六.Spring结合MyBatis
 
+#### (1).基本步骤
 
+1. 新建maven项目
+2. 加入maven依赖
+   - Spring依赖
+   - mybatis依赖
+   - MySQL驱动
+   - Spring的事务依赖
+   - mybatis和Spring 集成的依赖（mybatis官方提供的用来创建SqlSessionFaction , dao 接口）
+3. 创建实体类
+4. 创建dao接口和mapper文件
+5. 创建mapper的主配置文件
+6. 创建service接口和实现类，属性是dao，具有set方法方便实现set注入
+7. 创建Spring 的配置文件，声明mybatis 交个Spring创建
+   - 数据源--->（使用阿里的druid数据库连接池）
+   - sqlSessionFaction
+   - Dao对象
+   - 声明自定义的service
+8. 创建测试类，获取service对象，通过service调用dao完成数据库的访问
 
+#### (2).声明数据源
 
+- 作用是连接数据库，使用Driud数据库连接池
+
+```xml
+<!--Spring的配置文件-->
+<beans ...>
+	<!--声明数据源，作用是连接数据库-->
+    <bean id = "myDataSoure" class="..DruidDataSource" 
+          init-method="init" destroy-method="close">
+        <property name="url" value="连接对象"/>
+        <property name="username" value="用户名"/>
+        <property name="password" value="密码"/>
+        <property name="maxActive" value="最大连接数"/>
+    </bean>
+</beans>
+```
+
+#### (3).声明mybatis中的sqlSessionFactionBean类
+
+```xml
+<beans ...>
+    <bean id ="sqlSessionFaction" class="..SqlSessionFactionBean">
+        <!--声明数据源，变量是引用类型用ref 值是上面定义的类-->
+        <property name="dataSource" ref="myDataSoure"/>
+        <!--声明mybatis的主配置文件-->
+        <property name="configLocation" value="classpath:mybatis.xml"/>
+    </bean>
+</beans>
+```
+
+注：在Spring 配置文件中访问外部的路径，，要在使用classpath关键字，例：value="classpath:mybatis.xml"
+
+#### (4).创建Dao对象
+
+内部实现为调用SqlSession的getMapper方法
+
+```xml
+<beans  ...>
+    <!--不需要id，只要class-->
+    <bean class="MapperScanConfigurer???">
+    	<!-- 指定sqlSessionFaction对象的id --><!-- value 是上面定义的sqlSessionFaction对象 -->
+        <property name="sqlSessionFactionBeanName" value="sqlSessionFaction"/>
+        <!-- 指定包名   ,多个包名用“，”隔开 -->
+        <property name="beanPackage" value"包名">
+    </bean>
+</beans>
+```
+
+#### (5).声明service对象
+
+```xml
+<beans ...>
+	<bean id = "studentServic" class="包名+类名">
+        <!-- 其中ref中的值是上面bean中创建的 是类名的首字母小写 -->
+    	<property name="studentDao" ref="studnetDao"/>
+    </bean>
+</beans>
+```
+
+#### (6).Spring配置文件中指定外面文件
+
+```xml
+<beans ...>
+	<context :property-placeholder location="classpath:jdbc.properties"/>
+</beans>
+```
 
 
 
