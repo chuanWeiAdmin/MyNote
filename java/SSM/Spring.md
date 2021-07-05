@@ -715,21 +715,159 @@ public class {
 </beans>
 ```
 
+### 七.Spring 中的事务
+
+#### (1).注解方式，适合小项目中是使用
+
+- 使用Spring 中的@Transaction 注解
+
+- 步骤
+
+  1. 在Spring配置文件中声明事务管理器对象
+
+     ```xml
+     <bean id ="transaction" class="..DataSourcesTransactionManager">
+         <property name="dataSource"  ref="Druid中的ID"/>
+     </bean>
+     ```
+
+  2. 开启事务注解驱动，告诉Spring 要使用注解的方式 管理事务
+
+     ```xml
+     <beans ...>
+     	<tx:annotation-driven transaction-manager="transaction"/> <!-- 上面的事务管理器的ID -->
+     </beans>
+     ```
+
+  3. 在方法上加入@Transaction
+
+     ```java
+     @Transactional(
+     	propagation=propagation.REQUIRED,//常用的是默认
+         isolation=Isolation.DEFAULT,  //常用的是默认
+         readonly=false,
+         rollbackFor{xxx.class,xxx.class}  //异常的数组
+     )
+     public void doSome(){}  //业务方法
+     ```
+
+#### (2).大型项目使用aspectJ管理事务 
+
+***注：要加入AspectJ的依赖***
+
+1. 声明事务管理器对象
+
+   ```xml
+   <beans ....>
+   	<bean id= "transaction" class="..DataSourcesTransactionManager" >
+       	<property name="dataSource" ref="Druid中的ID"/>
+       </bean>
+   </beans>
+   ```
+
+2. 声明业务方法的事务属性(隔离级别，传播行为，超时时间) Spring的配置文件中
+
+   ```xml
+   <beans  ....>
+       <!-- 一定不要导错包了，一定要是以 tx  结尾的包 -->
+       <!-- id :自定义 transaction-manager  事务管理器中的ID -->
+   	<tx:advice id="myAdvice" transaction-manager="transactionManager"> 
+           <!--tx:attributes：配置事务属性-->
+           <tx:attributes>
+               <tx:method name="addData2"   <!-- 方法名，可以带通配符 -->
+                          propagation=""    <!-- 传播行为，枚举值  -->
+                          isolation=""      <!-- 隔离级别 -->
+                          rollback-for=""   <!-- 指定异常类名，发生异常一定回滚 -->
+                          />
+           </tx:attributes>
+       </tx:advice>
+   </beans>
+   ```
+
+3. 配置AOP
+
+   ```xml
+   <beans ...>
+   	<aop:config>
+           <!--expression 切入点表达式 -->
+   		<aop:pointcut id="servicePt" expression="execution(* *..service..*.*(..))"/>
+           <!-- advice-ref:声明事务级别的id -->
+           <!-- pointcut-ref: pointcut 上面的id -->
+           <aop:advisor advice-ref="myAdvice" pointcut-ref="servicePt" />
+       </aop:config>
+   </beans>
+   ```
+
+   
+
+### 八.spring结合web
+
+#### (1).前期提要：
+
+- 如果使用默认的方式获取容器每一次访问都会创建一个容器对象，不合理
+- 容器对象应该 从开始只创建一个
+- 应该创建监听器，当项目启动创建容器，放入全局作用域对象中
+- 监听器可以使用Spring容器中提供的监听器，也可以自己写一个监听器
+
+#### (2).加入依赖
+
+要在maven中加入Spring-web依赖
+
+```xml
+<dependency>
+	<groupId>org.springframework</groupId>
+ 	<artifactId>spring-web</artifactId>
+	<version>5.2.5.RELEASE</version>
+</dependency>
+```
 
 
 
+#### (3).注册监听器
+
+**在web.xml中注册监听器**
+
+```xml
+<web-app ...>
+    <!-- 配置Spring 的路径 -->
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+        <!-- 使用classpath：读取外部文件 -->
+        <param-value>classpath:applicationContext.xml</param-value>
+    </context-param>
+    <!-- 因为监听器会读取Spring 的配置文件，所以要使用上面的标签改变默认位置 -->
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+</web-app>
+```
 
 
 
+#### (4).在java中使用监听器创建Spring 对象
+
+```java
+WebApplicationContext ctx = null; //继承自ApplicationContext
+String key = WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE; 
+//得到ServletContext从对象中获得WebApplicationContext对象
+Object attr = getServletContext().getAttribute(key);
+if (attr != null) {
+	ctx = (WebApplicationContext) attr;
+}
+```
 
 
 
+#### (5).使用框架中提供的工具类获得Spring 对象
 
+```java
+WebApplicationContext ctx = null;
+ServletContext sc = request.getServletContext();
+//通过工具类得到对象
+ctx = WebApplicationContextUtils.getRequiredWebApplicationContext(sc);
+```
 
-
-
-
-
+**注：这样就能保证创建的是一个对象了**
 
 
 
