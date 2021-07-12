@@ -223,21 +223,314 @@ public class MyController{
 
 #### (2).返回String类型
 
+注：表示视图，可以是逻辑名称也可以是完整的视图路径
+
+```java
+@Controller
+public class MyController{
+    @RequestMapping(value="/some.do")
+    public String doSome(String name , Interage age ){
+        //这样写要配置视图解析器
+        return "show";//表示转发到show.jsp页面当中
+    }
+}
+```
+
+
+
 #### (3).返回 void 类型
+
+- 不能表示数据也不能表示视图，在处理Ajax的时候可以使用void返回值
+- 通过HttpServletRequest返回数据
+- ajax只有数据没有视图
 
 #### (4).返回对象 Object
 
+- 主要响应ajax
+
+- 在处理ajax请求中主要用到json实现步骤
+
+  - 加入处理json的工具库的依赖（jackson） Spring使用 的就是jackson
+
+  - 在springMVC配置文件中加入注解驱动   一定要主要是mvc结尾的
+
+    ```xml
+    <beans ...>
+        <mvc:annocation-driven>
+    </beans>
+    ```
+
+  - 在处理器方法中加入注解  （@ResponseBody）
+
+    ```java
+    @Controller
+    public class MyController{
+        @RequestMapping(value="/some.do")
+        @ResponseBody  //返回Object一定要有
+        public Student doSome(String name , Interage age ){
+            Student st =new Student();
+            st...
+            return st;//表示转发到show.jsp页面当中
+        }
+    }
+    ```
+
+  - 常用的两个方法
+
+    1. StringHTTPMessageConverter
+    2. MappingJackson2HttpMessageConverter
+
 #### (5).返回  List 集合
+
+***同返回对象一样，会将List转换成json数值***
 
 #### (6).返回String 类型的另一种用法
 
+- 另一种用法，返回String类型数据是数据
 
+- 区分String是数据还是视图就看有么有@ResponseBody注解
+
+- String返回的数据使用的是  ISO-8859-1  数据类型，可以在@RequestMapping添加属性produces修改编码格式
+
+- 代码实现
+
+  ```java
+  @Controller
+  public class MyController{
+      @RequestMapping(value="/some.do",produce="text/plain;chartset=utf-8")
+      @ResponseBody  //返回String代表数据时一定要有这个
+      public String doSome(String name , Interage age ){
+          return "此时返回的内容就是数据，且解决了中文乱码";
+      }
+  }
+  ```
+
+  
 
 ****
 
 ### 四.DispatcherServlet处理静态资源
 
+#### (1).当中央调度器中   url-pattern 为 /时
+
+中央调度器中的  url-pattern 为 "/ "时表示不管是什么路径到要经过中央调度器，
+
+但是中央调度器默认没处理静态资源的能力，有两种处理方法
+
+1. 处理方法一：在Spring 的配置文件中添加标签，**使用默认的servlet处理静态资源**
+
+   ```xml
+   <beans  ...>
+       <!-- 添加这个标签一定要添加注解驱动 -->
+   	<mvc:default-servlet-handler/>
+   
+       <!-- 注解驱动 -->
+       <mvc:annotation-driven/>
+   </beans>
+   ```
+
+2. 处理方法二：将静态资源位置告诉Spring , 在Spring配置文件中添加静态文件的位置
+
+   ```xml
+   <beans ...>
+       <!-- mapping：访问静态资源的uri -->
+       <!-- location : 表示静态资源在项目中的位置 -->
+       <!-- 可以存着多个 -->
+   	<mvc:resources mapping="/images/**" loaction ="/images/"
+   </beans>
+   ```
+   
+   注：
+   
+   - 访问动态资源要额外添加注解驱动
+   - 可以将文件同一放在一个目录下，这样配置一个同一的就可以了
+
 ****
 
 ### 五.Spring中核心技术
 
+#### (1).请求的转发重定向
+
+1. ##### 关键字
+
+   - forward：表示转发，相当于  request.getRequestDispatcher("xxx.jsp").forward(req,resp);
+   - redirect：表示重定向，response.sendRedirect("xxx.jsp")
+
+2. ##### 处理器方法返回ModelAndView实现  --->  ***转发***
+
+   - 语法  mv.setViewName("forward:视图的完整路径");
+
+   - 特点：不和视图解析器一同使用，**（当做没有视图解析器）**
+
+     ```java
+     @Controller
+     public class myController{
+         @RequestMapping(value="/doSome.do")
+         public ModelAndView doSome(){
+             ModelAndView mv = new ModelAndView();        
+             //设置转发
+             mv.setViewName("forward:/hello.jsp");
+             return mv;
+     	}    
+     }
+     ```
+
+3. ##### 处理器方法返回ModelAndView实现 ---> ***重定向***
+
+   - 特点 和 语法格式同上
+
+   - 注：
+
+     1. 不能访问WEB-INF 下的内容
+     2. 在目标页可以使用 ${param.key}获取值，入 ${param.name}
+
+     ```java
+     @Controller
+     public class myController{
+         @RequestMapping(value="/doSome.do")
+         public ModelAndView doSome(){
+             ModelAndView mv = new ModelAndView();        
+             //设置转发
+             mv.setViewName("redirect:/hello.jsp");
+             return mv;
+     	}    
+     }
+     ```
+
+#### (2).异常处理
+
+注：使用aop思想，将异常同一处理
+
+##### (一).异常处理步骤
+
+1. 新建maven项目
+2. 加入依赖
+3. 在controller抛出异常
+4. 创建一个普通类，作为全局异常处理类
+   - 在类上加入@controllerAdvice
+   -  在类中定义方法，方法上加@ExceptionHandler
+5. 创建处理异常类的视图
+6. 创建SpringMVC的配置文件
+   - 组件扫描器，扫描@Controller注解
+   - 组件扫描器，扫描@ControllerAdvice所在的包名 
+   - 声明注解驱动
+
+##### (二).自定义异常类
+
+- 一定要在类上添加@ControllerAdvice
+
+- 一定要在方法上添加@ExceptionHandler
+
+- **处理器方法能返回声明就能返回什么，处理器能接收什么就能接收什么**
+
+  ```java
+  @ControllerAdvice
+  public class ClobalException{
+     @ExceptionHandler(value=xxxException.class)
+      public ModelAndView doSome(Exception ex){
+          /*
+          在异常处理中要执行的工作：
+          1.把需要记录的信息记录下来
+          2.发送消息，短信通知
+          3.给用户友好的提示
+          */
+          ModelAndView mv = new ModelAndView();
+          mv.sendObject(ex.message());
+          mv.setViewName("error");
+          return mv;
+      }
+  }
+  ```
+
+  
+
+##### (三).ExceptionHandler中的属性
+
+- @ExceptionHandler(value=NameException.class)  表示处理姓名异常(自定义异常)，**处理特定的异常**
+- @ExceptionHandler  表示处理带有属性之外的全部异常
+
+##### (四).Spring 中的配置文件
+
+```xml
+<beans ...>
+    <!-- 组件扫描器 -->
+	<context:component-sacn base-package="异常处理的包名"/>
+    <!-- 注解驱动 -->
+    <mav:annotation-driven/>
+</beans>
+```
+
+
+
+#### (3).拦截器
+
+##### (一).前情提要
+
+1. 拦截器是SpringMVC中的，需要实现HandlerInterptor接口
+2. 和过滤器类似
+   - 过滤器：用来过滤请求参数，设置编码字符集
+   - 拦截器：拦截用户的请求，在请求的判断
+3. 拦截器可以是全局的，可以对多个Controller做拦截，可以有0个或多个，用着，用户登录，权限检查，记log
+
+##### (二).拦截器的使用步骤
+
+1. 定义类实现HandlerIntercepor接口
+2. 在SpringMVC的配置文件中，声明拦截器，**让框架知道自定义的拦截器存着**
+
+##### (三).拦截器执行的时间
+
+- 分别对应了三个方法
+
+1. 在请求处理之前执行（首次）---->preHandle  方法
+2. 在控制请执行之后会执行----------->postHandle  方法
+3. 在请求处理完成也会执行----------->afterCompletion  方法
+
+##### (四).代码实现
+
+1. 实现HandleInterceptor并重写三个方法（5.25之后用谁重写谁）
+
+2. **preHandle**（预处理方法）
+
+   - 参数： Object  handle ： 被拦截的控制器对象
+   - 返回值      boolean
+     - true：**请求通过验证，可以执行处理器方法**
+     - false：**请求没有通过验证，被拦截器截止了（没有之后的方法了）**
+   - 特点
+     - 在控制器方法之前执行
+     - 可以获得请求信息，判断信息
+
+3. **postHandle**（后处理方法）
+
+   - 参数：
+     - Object  handle ： 被拦截的控制器对象
+     - ModelAndView mv 处理器方法的返回值
+   - 特点：在处理器方法之后执行，可以拿到处理器方法的返回值并且修改
+
+4. **afterCompletion** （最后执行的方法)
+
+   - 参数：
+     - Object  handle ： 被拦截的控制器对象
+     - Exception  ex 程序中的异常
+   - 特点：对视图执行forward请求完成之后才执行，一般用作资源回收工作
+
+   ```java
+   
+   ```
+
+5. 声明拦截器（在Spring 的配置文件中）
+
+   ```xml
+   <beans ...>
+       <!-- 声明第一的拦截器对象。（可以有多个拦截器对象） -->
+   	<mvc:interceptor>
+           <!-- 指定拦截器的uri，表示访问这个地址，首先要经过这个拦截器 -->
+       	<mvc:mapping path="/user/**/"/>
+           <!-- 声明要使用的拦截器对象 -->
+           <bean class="包名+类名"/>
+       </mvc:interceptor>
+   </beans>
+   ```
+
+   
+
+##### (五).过滤器和拦截器的区别
