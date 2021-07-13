@@ -349,7 +349,7 @@ public class MyController{
 
 ### 五.Spring中核心技术
 
-#### (1).请求的转发重定向
+#### (一).请求的转发重定向
 
 1. ##### 关键字
 
@@ -397,11 +397,11 @@ public class MyController{
      }
      ```
 
-#### (2).异常处理
+#### (二).异常处理
 
 注：使用aop思想，将异常同一处理
 
-##### (一).异常处理步骤
+##### (1).异常处理步骤
 
 1. 新建maven项目
 2. 加入依赖
@@ -415,7 +415,7 @@ public class MyController{
    - 组件扫描器，扫描@ControllerAdvice所在的包名 
    - 声明注解驱动
 
-##### (二).自定义异常类
+##### (2).自定义异常类
 
 - 一定要在类上添加@ControllerAdvice
 
@@ -444,12 +444,12 @@ public class MyController{
 
   
 
-##### (三).ExceptionHandler中的属性
+##### (3).ExceptionHandler中的属性
 
 - @ExceptionHandler(value=NameException.class)  表示处理姓名异常(自定义异常)，**处理特定的异常**
 - @ExceptionHandler  表示处理带有属性之外的全部异常
 
-##### (四).Spring 中的配置文件
+##### (4).Spring 中的配置文件
 
 ```xml
 <beans ...>
@@ -462,9 +462,9 @@ public class MyController{
 
 
 
-#### (3).拦截器
+#### (三).拦截器
 
-##### (一).前情提要
+##### (1).前情提要
 
 1. 拦截器是SpringMVC中的，需要实现HandlerInterptor接口
 2. 和过滤器类似
@@ -472,12 +472,12 @@ public class MyController{
    - 拦截器：拦截用户的请求，在请求的判断
 3. 拦截器可以是全局的，可以对多个Controller做拦截，可以有0个或多个，用着，用户登录，权限检查，记log
 
-##### (二).拦截器的使用步骤
+##### (2).拦截器的使用步骤
 
 1. 定义类实现HandlerIntercepor接口
 2. 在SpringMVC的配置文件中，声明拦截器，**让框架知道自定义的拦截器存着**
 
-##### (三).拦截器执行的时间
+##### (3).拦截器执行的时间
 
 - 分别对应了三个方法
 
@@ -485,7 +485,7 @@ public class MyController{
 2. 在控制请执行之后会执行----------->postHandle  方法
 3. 在请求处理完成也会执行----------->afterCompletion  方法
 
-##### (四).代码实现
+##### (4).代码实现
 
 1. 实现HandleInterceptor并重写三个方法（5.25之后用谁重写谁）
 
@@ -533,7 +533,7 @@ public class MyController{
 
    
 
-##### (五).过滤器和拦截器的区别
+##### (5).过滤器和拦截器的区别
 
 1. 过滤器是servlet中的对象，拦截器是框架中的对象
 
