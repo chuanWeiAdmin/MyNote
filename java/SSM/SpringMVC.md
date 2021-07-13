@@ -534,3 +534,29 @@ public class MyController{
    
 
 ##### (五).过滤器和拦截器的区别
+
+1. 过滤器是servlet中的对象，拦截器是框架中的对象
+
+2. 过滤器是实现Filter接口，拦截器是实现HandlerInterceptor接口
+
+3. 过滤器是用来设置request，response参数属性，侧重对数据的过滤
+
+   拦截器是用来验证请求的，能拦截请求
+
+4. 过滤器是在拦截器之前执行的
+
+5. 过滤器的Tomcat创建的对象
+
+   拦截器是Spring MVC创建的对象
+
+6. 过滤器只有一个执行时机
+
+   拦截器有三个执行时机
+
+7. 过滤器可以处理jsp，js，html等
+
+   拦截器侧重对Controller对象的拦截，如果请求不被DispatcherServlet接收，这个请求不会执行拦截器的内容
+
+8. 拦截器拦截普通方法
+
+   过滤器过滤servlet请求响应
