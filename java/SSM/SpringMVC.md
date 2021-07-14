@@ -115,6 +115,9 @@
     - @RequestMapping(value="xx/xx",method=RequestMethod.POST)   //表示只能通过post方法访问
     - @RequestMapping(value="xx/xx",method=RequestMethod.GET)   //表示只能通过get方法访问
   - produces ：设置格式   (produces="text/plain;charset=utf-8")
+  - consumes： 指定处理请求的提交内容类型（Content-Type），例如application/json, text/html;
+  - params： 指定request中必须包含某些参数值是，才让该方法处理。
+  - headers： 指定request中必须包含某些指定的header值，才能让该方法处理请求。
 
 #### (2).处理器方法获取参数的四类
 
