@@ -560,3 +560,7 @@ public class MyController{
 8. 拦截器拦截普通方法
 
    过滤器过滤servlet请求响应
+
+#### (四).DispatcherServlet流程图
+
+![](..\..\资源\SpringMVC流程.png)
