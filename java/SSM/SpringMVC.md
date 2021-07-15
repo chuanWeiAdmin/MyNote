@@ -477,12 +477,13 @@ public class MyController{
 
 ##### (2).拦截器的使用步骤
 
-1. 定义类实现HandlerIntercepor接口
-2. 在SpringMVC的配置文件中，声明拦截器，**让框架知道自定义的拦截器存着**
+1. 定义类，实现HandlerIntercepor接口
+2. 重写方法
+3. 在SpringMVC的配置文件中，声明拦截器，**让框架知道自定义的拦截器存着**
 
 ##### (3).拦截器执行的时间
 
-- 分别对应了三个方法
+- 分别对应了  HandlerIntercepor 接口  的三个方法
 
 1. 在请求处理之前执行（首次）---->preHandle  方法
 2. 在控制请执行之后会执行----------->postHandle  方法
@@ -517,6 +518,40 @@ public class MyController{
    - 特点：对视图执行forward请求完成之后才执行，一般用作资源回收工作
 
    ```java
+   //拦截器类：拦截用户的请求。
+   public class MyInterceptor implements HandlerInterceptor {
+   
+       @Override
+       public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {        
+           System.out.println("拦截器的MyInterceptor的preHandle()");
+           //计算的业务逻辑，根据计算结果，返回true或者false
+           //给浏览器一个返回结果
+           //request.getRequestDispatcher("/tips.jsp").forward(request,response);
+           return true;
+       }
+   
+       @Override
+       public void postHandle(HttpServletRequest request,
+                              HttpServletResponse response,
+                              Object handler, ModelAndView mv) throws Exception {
+           
+           System.out.println("拦截器的MyInterceptor的postHandle()");
+           //对原来的doSome执行结果，需要调整。
+           if( mv != null){
+               //修改数据
+               mv.addObject("mydate",new Date());
+               //修改视图
+               mv.setViewName("other");
+           }
+       }
+   
+       @Override
+       public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
+                                   Object handler, Exception ex) throws Exception {
+           System.out.println("拦截器的MyInterceptor的afterCompletion()");
+           //最后执行的方法
+       }
+   }
    
    ```
 
