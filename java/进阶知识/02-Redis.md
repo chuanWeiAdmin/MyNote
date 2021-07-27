@@ -147,3 +147,29 @@
 | zrevrank  key  member                       | 获取*从大到小*的指定有序集合指定元素的  **排位** |
 | zscore  key  member(分数)                   | 获取指定元素的分数                               |
 
+### 四.redis持久化策略
+
+#### 1.RDB策略
+
+注：一般开启RDB就可以
+
+- 定义：在指定的时间间隔内，redis服务执行指定次数的写操作会自定触发一次持久化操作
+- 配置文件中的内容：
+  - save  <seconds>  <changes>
+  - dbfilename      RDB持久数据存储文件名
+  - dir    RDB持久化文件所在目录
+
+RDB策略是默认持久化策略策略，redis服务开启的时候就已经开启了
+
+
+
+#### 2.AOF策略
+
+注：采用操作日志来记录进行一次写操作，每一次redis启动时，都会重新执行一次操作日志中的命令
+
+配置文件中的内容
+
+​	appendonly  ：  配置是否开启AOF策略
+
+​	appendfilename  ：  配置操作日志文件
+
