@@ -250,3 +250,13 @@ RDB策略是默认持久化策略策略，redis服务开启的时候就已经开
 
 10. **注：任何redis服务中只要有从的身份就不能写数据**
 
+#### (二).哨兵模式
+
+注：主机宕机，从机自动上位
+
+1. 搭建主从redis服务器
+2. 提供哨兵配置文件，在redis的安装目录下
+   - 创建redis-sentinel.conf  配置文件
+   - 在配文件中添加  sentinel monitor dc-redis 192.168.137.11 6379 1
+   - dc-redis  名字：随意起         1 ：表示投票数超过就当选主机
+3. 启动哨兵服务    redis-sentinel  Redis-sentinel.conf
