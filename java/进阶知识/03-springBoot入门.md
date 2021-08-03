@@ -1,4 +1,4 @@
-### (一).springBoot入门
+### 第一部分：springBoot入门
 
 #### 一.springBoot基本知识
 
@@ -164,7 +164,7 @@
 
 ****
 
-### (二).springBoot Web开发
+### 第二部分：springBoot Web开发
 
 #### 一.springBoot集成mybatis
 
@@ -325,5 +325,85 @@ public class MyController{
 
 ##### 3.RESTFull请求冲突解决方式
 
+- 使用不同的请求方式解决
+- 更改请求参数  (url) 位置来解决
+  - /student/{id}/detail ..
+  - /student/detail/{id}
+
 #### 四.springBoot集成Rides
+
+##### 1.添加依赖
+
+- springboot集成Redis的起步依赖
+
+  ```xml
+  <!-- pom文件中 -->
+  <!-- redis依赖 -->
+  <dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-starter-data-redis</artifactId>
+  </dependency>
+  ```
+
+  
+
+##### 2.设置redis的配置信息
+
+```properties
+spring.redis.host=127.0.0.1
+#Redis服务器连接端口
+spring.redis.port=6379
+
+######################下面可不填#######################
+
+#Redis服务器连接密码（默认为空）
+spring.redis.password=
+#连接池最大连接数（使用负值表示没有限制）
+spring.redis.pool.max-active=8
+#连接池最大阻塞等待时间（使用负值表示没有限制）
+spring.redis.pool.max-wait=-1
+#连接池中的最大空闲连接
+spring.redis.pool.max-idle=8
+#连接池中的最小空闲连接
+spring.redis.pool.min-idle=0
+#连接超时时间（毫秒）
+spring.redis.timeout=30000
+
+```
+
+
+
+##### 3.向redis中放值
+
+```java
+@Service
+public class StudentService{
+    @Autowired
+    private RedisTemplate<Object,Object> redisTemplate;
+    
+    public void put(String key,String Value){
+        //向redis中存数据
+        redisTemplate.OPSForValue().set(key,value);
+    }
+    
+}
+```
+
+
+
+##### 4.从redis中取值
+
+```java
+@Service
+public class StudentService{
+    @Autowired
+    private RedisTemplate<Object,Object> redisTemplate;
+    
+    public void put(String key,String Value){
+        //向redis中获取数据
+        String value=(String)redisTemplate.OPSForValue().get(key);
+    }
+    
+}
+```
 
