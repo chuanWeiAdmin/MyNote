@@ -407,3 +407,177 @@ public class StudentService{
 }
 ```
 
+#### 五.spring集成Dubbo
+
+##### 1.服务提供者的依赖
+
+- dubbo集成spring的起步依赖
+- 注册中心的依赖（zookeeper）
+- 接口工程的依赖
+
+##### 2.服务提供者的application配置
+
+```properties
+#下面的配置没有配置
+spring.application.name=(唯一标识)一般是模块的包名
+#当前工程是一个服务提供者
+spring.application.server=true
+#设置注册中心
+spring.application.registry=zookeeper://127.0.0.1:2181
+```
+
+
+
+##### 3.消费者工程的依赖
+
+- 同服务者的依赖相同
+
+##### 4.消费者工程的application配置
+
+```properties
+spring.appliction.name=(唯一标识)一般是模块的包名
+spring.application.registry=zookeeper://127.0.0.1:2181
+```
+
+
+
+##### 5.服务者提供的方法
+
+```java
+@Component  //将对象交给容器管理
+//这里的注解一定要是alibaba.dubbo.config.annotation  下的注解
+@Service(interfaceClass=StudentService.class,version="1.0.0",timeout=15000)
+public class StudentServiceImpl implements StudentService {
+    public Integer query(){
+        return 1250;
+    }
+}
+```
+
+
+
+##### 6.消费者工程使用的方法
+
+```java
+@Controller
+public class StudentController{
+    @Reference(interfaceClass=StudentService.class,version="1.0.0",check=false)
+    private StudentService service;
+    //这样就能将消费者工程中的接口注入进来
+    
+    //....... 一些方法
+} 
+```
+
+
+
+##### 7.主入口添加注解
+
+- 使用dubbo要在主入口中开启Dubbo的注解
+
+  ```java
+  @SpringBootApplication
+  @EnableDubboConfigration  //开启Dubbo注解
+  
+  ```
+
+  
+
+##### 8.实体类在网络中传输一定要序列化
+
+```java
+public class Student implements Serializable{
+    //属性
+    //set和get方法
+}
+```
+
+
+
+****
+
+### 第三部分：springboot集成其他
+
+#### 一.springBoot非web开发(了解)
+
+##### 1.第一种实现方式
+
+- 创建springBoot时不选择web
+
+- 通过容器拿到对象
+
+  ```java
+  @SpringBootApplication
+  public class Application{
+      public static void main(String[] args){
+          //获取容器
+          configurableApplicationContext applicationContext=
+              SpringApplication.run(Application.class,args);
+          //从容器中获取指定对象
+          Student stu=(Student)applicationContext.getBean("类名的首字母小写");
+          //就可以通过对象调取方法了
+      }
+  }
+  ```
+
+- springBoot启动时返回值也是ConfigurableApplicationContext也是一个容器，想当于spring启动容器ClassPathXmlApplication
+
+##### 2.第二种实现方式
+
+```java
+@SpringBootApplication
+public class Application implements CommandLinRunner{
+    @AutoWired
+    private StudentService service;
+    
+    public static void main(String[] args){       
+    }
+    
+    public void run (String ...args)throws Execption{
+        service.sayHello();
+    }
+    
+}
+```
+
+
+
+##### 3.关闭/改变启动  logo 
+
+- 在resource下放入banner.txt 内容就是logo
+
+#### 二.springBoot使用拦截器
+
+##### 1.实现HandlerInterceptor接口，并重写三个方法
+
+- 同springMVC相同
+
+##### 2.编写配置类
+
+```java
+@Configuration
+public class InterceptorConfig implements WebMvcConfigurer{
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new ReqInterceptor())
+            .addPathPatterns("/**")//l拦截的路径
+            .exdudePathPatterns();//排除的路径
+    }
+}
+```
+
+
+
+#### 三.springBoot使用过滤器 Filter (了解)
+
+##### 第一种方式：注解方式
+
+##### 第二种方式：通过配置类（注册组件）
+
+#### 四.springBoot设置字符编码
+
+#### 五.springBoot打包
+
+#### 六.springBoot集成logback
+
+#### 七.springBoot集成Thymeleaf
