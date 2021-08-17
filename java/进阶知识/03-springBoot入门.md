@@ -572,12 +572,501 @@ public class InterceptorConfig implements WebMvcConfigurer{
 
 ##### 第一种方式：注解方式
 
+- 实现Filter接口，重写方法
+
+  ```java
+  @WebFilter(urlPatterns="/myfilter")
+  public class MyFilter implements Filter { //这里的包不要导错了，是java.servlet下的
+      @Override
+      public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse,
+           FilterChain filterChain) throws IOException, ServletException {
+           
+  		 if(false){
+               response.sendRedirect("http://localhost:8081/demo/test/login");//重定向
+           }
+           filterChain.doFilter(servletRequest, servletResponse);
+  		 //doFilter将请求转发给过滤器链下一个filter , 如果没有filter那就是你请求的资源
+  	} 
+  }
+  ```
+
+- Application启动类添加@ServletComponentScan注解
+
+  ```java
+  @SpringBootApplication
+  @ServletComponentScan(basePackage="包名")
+  //Servlet、Filter、Listener 可以直接通过 @WebServlet、@WebFilter、@WebListener 注解自动注册，无需其他代码。
+  public class Application {
+  	public static void main(String[] args) {
+  		SpringApplication.run(Application.class, args);
+  	}
+  }
+  ```
+
+  
+
 ##### 第二种方式：通过配置类（注册组件）
+
+- 实现Filter接口，重写方法（同上一步一样，不用添加注解）
+
+- 编写注册组件（配置类）
+
+  ```java
+  @Configuration
+  public class FilterConfig{
+      @Bean
+      public FilterRegistrationBean myFilterBean(){
+          //1.自定义的过滤器类
+          MyFilter myFilter =new MyFilter();
+          //2.注册过滤器
+          FilterRegistrationBean frb=new FilterRegistrationBean(myFilter);
+          
+          //3.添加过滤的路径
+          frb.addUrlPatterns("/user/**");
+          
+          return frb;
+          
+      }
+  }
+  ```
+
+  
 
 #### 四.springBoot设置字符编码
 
+##### 第一种方式：通过注册组件(了解)
+
+- 编写注册组件
+
+  ```java
+  @Configuration
+  public class SystemConfig{
+      @Bean
+      public FilterRegistrationBean xxx(){
+          //1.创建字符编码过滤器
+          CharacterEncodingFilter charEncoding = new CharacterEncodingFilter();
+          charEncoding.setForceEncoding(true);
+          charEncoding.serEncoding("utf-8");
+          
+          //2.注册过滤器
+          FilterRegistrationBean frb=new FilterRegistrationBean();
+          frb.setFilter(charEncoding);  //设置字符编码过滤器
+          frb.addUrlPatterns("/*");  //设置要过滤的路径
+          
+          return frb;       
+          
+      }
+  }
+  
+  ```
+
+  
+
+##### 第二种方式： 使用springboot自带的响应编码
+
+- 在springboot的主配置文件中添加
+
+  ```properties
+  #编码格式
+  spring.http.encoding.enabled=true
+  spring.http.encoding.force=true
+  spring.http.encoding.charset=UTF-8
+  ```
+
+  
+
 #### 五.springBoot打包
+
+##### 第一种方式：打war包并部署
+
+1. 修改打包方式
+
+2. 指定打包成的文件名
+
+3. 要显示jsp，要是设置METE-INF资源文件路径
+
+   ```xml
+   <!-- 在pom文件中修改 -->
+   <packaging>war</packaging>
+   
+   <build>
+   	<finalName>要生成的包名</finalName>
+       
+   	<resources>
+   		<resource>
+   			<!--源文件位置-->
+   			<directory>src/main/webapp</directory>
+   			
+   			<!--指定编译到 META-INF/resources 目录下，该目录不能随便编写-->
+   			<targetPath>META-INF/resources</targetPath>
+   			
+   			<!--指定包含文件-->
+   			<includes>
+   				<include>**/*.*</include>
+   			</includes>
+   		</resource>
+   
+           <!--mybatis 的 mapper.xml-->
+           <resource>
+               <directory>src/main/java</directory>
+               <includes>
+                   <include>**/*.xml</include>
+               </includes>
+           </resourc>
+   
+           <!--src/main/resources 下的所有配置文件编译到 classes 下面去-->
+           <resource>
+               <directory>src/main/resources</directory>
+               <includes>
+                   <include>**/*.*</include>
+               </includes>
+           </resourc>
+   	</resources>
+       
+   </build>
+   ```
+
+4. 改变springboot的入空
+
+   ```java
+   @SpringBootApplication
+   public class Application extends SpringBootServletInitializer { 
+   	
+       public static void main(String[] args) { 
+   		SpringApplication.run(Application.class, args); 
+   	}
+   	
+   	@Override 
+   	protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
+   		//参数为当前 SpringBoot 启动类 
+   		return builder.sources(Application.class);
+   	}
+   }
+   ```
+
+   
+
+##### 第二种方式：打jar包并部署
+
+- **注默认 SpingBoot 提供的打包插件版本为 2.2.2.RELEASE，这个版本打的 jar 包 jsp 不能访问**
+
+- **修改为 1.4.2.RELEASE（其它版本测试都有问题)**
+
+  ```xml
+  <!-- pom 文件修改 -->
+  <build>
+  	<plugins>
+  		<!-- SpringBoot 提供打包编译插件 -->
+  		<plugin>
+  			<groupId>org.springframework.boot</groupId>
+  			<artifactId>spring-boot-maven-plugin</artifactId>
+  			<version>1.4.2.RELEASE</version>
+  		</plugin>
+  	</plugins>
+  </build>
+  ```
+
+  
 
 #### 六.springBoot集成logback
 
+1. 添加logback-spring.xml文件
+
+   在resources目录下(文件名有规定)，文件内容百度
+
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   
+   <configuration scan="true" scanPeriod="10 seconds">
+   	<!--输出到控制台-->
+   	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+   		<!--此日志 appender 是为开发使用，只配置最底级别，控制台输出的日志级别是大于或等于此级别的日志信息-->
+   		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+   			<level>debug</level>
+   		</filter>
+   		<encoder>
+   			<Pattern>%date [%-5p] [%thread] %logger{60} [%file : %line] %msg%n</Pattern>
+   			<!-- 设置字符集 -->
+   			<charset>UTF-8</charset>
+   		</encoder>
+   	</appender>
+   	<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+   		<!--<File>/home/log/stdout.log</File>-->
+   		<File>D:/log/stdout.log</File>
+   		<encoder>
+   			<pattern>%date [%-5p] %thread %logger{60} [%file : %line] %msg%n</pattern>
+   		</encoder>
+   		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+   			<!-- 添加.gz 历史日志会启用压缩 大大缩小日志文件所占空间 -->
+   
+   			<!--<fileNamePattern>/home/log/stdout.log.%d{yyyy-MM-dd}.log</fileNamePattern>-->
+   
+   			<fileNamePattern>D:/log/stdout.log.%d{yyyy-MM-dd}.log</fileNamePattern>
+   			<maxHistory>30</maxHistory><!-- 保留 30 天日志 -->
+   		</rollingPolicy>
+   	</appender>
+   	
+   	<logger name="com.abc.springboot.mapper" level="DEBUG" />
+   	<root level="INFO">
+   		<appender-ref ref="CONSOLE"/>
+   		<appender-ref ref="FILE"/>
+   	</root>
+   </configuration>
+   ```
+
+   
+
+2. 添加依赖
+
+   ```xml
+   <!--添加lombok的依赖-->
+   <dependency>
+   	<gropupId>org.projectlombok</gropupId>
+       <artifactId>lombok</artifactId>
+   </dependency>
+   ```
+
+   
+
+3. 在类上添加注解
+
+   @slf4j
+
+4. 使用方法打印
+
+   ```java
+   @Slf4j
+   public class SomDao{
+       public void test(){
+           log.info("测试消息");
+       }
+       
+   }
+   ```
+
+   
+
 #### 七.springBoot集成Thymeleaf
+
+##### 1.创建项目
+
+- 不仅要添加web启动依赖还要添加  Template Engines (模板引擎)
+
+##### 2.将html变成Thymeleaf
+
+在数据标签中添加约束
+
+```html
+<html xmlns:th="http://www.thymeleaf.org">
+    
+</html>
+```
+
+##### 3.使用后台传过来的数据
+
+```html
+<h2 th:text="${data}"></h2>
+```
+
+##### 4.设置thymeleaf 模板引擎前后缀(可选项)
+
+- 在springboot是配置文件中设置前后缀
+
+  ```properties
+  spring.thymeleaf.prefix="classpath:/templates/"
+  spring.thymeleaf.suffix=.html 
+  ```
+
+##### 5.设置改变thymeleaf页面改变
+
+- 设置thymeleaf 的模板引擎缓存为false
+
+  ```properties
+  #要想热启动一定要关闭页面缓存
+  spring.thymeleaf.cache=true
+  ```
+
+- 设置入口跟随资源改变而改变(idea的设置)
+
+##### 6.表准变量表达式
+
+- 语法：   ${....}
+
+- 意义： 同EL表达式中的 ${  } 相同用于获取  域中的数据
+
+- 用法：必须依托于一个 html 标签中
+
+  ```xml
+  <h2 th:text="${data}"></h2>
+  ```
+
+##### 7.*表达式/选择变量表达式
+
+- 语法： *{...}
+
+- 用法 ：必须用 th:object 属性来绑定这个对象，在div中的子标签使用 *  来代替绑定的对象 ${user}
+
+  ```html
+  <div th:object="${user}">
+      用户的编号：<span th:text="*{id}"></span>
+  </div>
+  ```
+
+  
+
+##### 8.混合使用(不推荐)
+
+```html
+<span th:text="*{user.id}"></span>
+```
+
+##### 9.url路径表达式
+
+- 语法：  @{....}
+
+  ```html
+  <!-- 同直接写绝对路径没有区别 -->
+  <a th:href="@{www.baidu.com}"></a>
+  ```
+
+- **不带参数**
+
+  ```html
+  <a th:href="@{/user/detail}"></a>
+  ```
+
+- **相对路径(带参数)**
+
+  ```html
+  <a th:href="@{/user/detail?id=1001}"></a>
+  ```
+
+- ***相对路径(带参数，参获取后端传过来的参数)***
+
+  ```html
+  <a th:href="@{/user/detail?id='${id}'}"></a>
+  ```
+
+- ***相对路径（多个参数） 强烈推荐***
+
+  ```html
+  <a th:href="@{/user/(id=${id},name=${name})}"></a>
+  <!-- 多个参数用（）包裹，参数之间用  ，  分隔 -->
+  ```
+
+##### 10：th:each 属性
+
+```html
+<div th:each="user,userstat:${userList}">
+    <span th:text="${userstat.index}"></span>
+    <span th:text="${user.id}"></span>
+    ....
+</div>
+```
+
+- user : 当前循环对象的变量名称
+- userstat : 当前循环变量对象状态变量（个数，索引之类的） **可选：不写的话也存在**
+- ${userList} : 当前循环的集合
+
+##### 11：th:if  属性
+
+- 如果满足条件执行，否则不执行
+
+  ```html
+  <div th:if="${sex  eq  1}">
+  	男
+  </div>
+  <div th:if="${sex  ==  0}">
+  	女
+  </div>
+  ```
+
+  
+
+##### 12.: th:unles 属性
+
+- 同上效果相同，条件取反
+
+##### 13：th:switch属性
+
+```html
+<div th:switch="${text}">
+    <span th:case="0">产品0</span>
+    <span th:case="1">产品1</span>
+    <span th:case="*">默认</span>
+</div>
+```
+
+
+
+##### 14：内联文本  th:inline="text"
+
+- 取值的时候不用依托于标签
+
+  ```html
+  <div th:inline="text">
+      数据 ： [[${data}]]
+  </div>
+  ```
+
+  
+
+##### 15：内联脚本   th:inline="javascript"
+
+- 使用内联脚本可以在js中使用 标准变量表达式
+
+```html
+<script type="text/javascript" th:inline="javascript">
+	function showData(){
+        var src = [[${data}]]
+    }
+</script>    
+```
+
+##### 16：字符串的拼接
+
+- |  要拼接的内容  |
+
+  ```html
+  <span th:text="|共${cunt}页|"></span>
+  ```
+
+  
+
+##### 17：thymeleaf 中的表达式
+
+- 都是以#开头
+
+- 从session中取值
+
+  ```html
+  <!-- 1. -->
+  <span th:text="${#session.getAttribute('data')}"></span>
+  <!-- 2. -->
+  <span th:text="${#httpSession.getAttribute('data')}"></span>
+  <!-- 3. -->
+  <span th:text="${#session.data}"></span>
+  ```
+
+  
+
+- 从request中取值
+
+  ```html
+  <script type="text/javascript" th:inline="javascript">
+  	function showData(){
+  		var scheme = [[${ #request.getScheme }]];   //协议名
+  		var servletName = [[${ #request.getServerName }]];  //服务器名
+  		var serverPort = [[${ #request.getServerPort }]];  //端口号
+  		var serverPort = [[${ #request.getContextPath }]];  //上下文根
+  
+  		//下面可以拼接成一个整路径
+    		var requestUrl = [[${ #HttpServletRequest.requestUrl }]];  //请求的url
+  		var queryString = [[${ #HttpServletRequest.queryString }]];  //请求的参数
+  
+  	}
+  </script>    
+  ```
+
+  
+
