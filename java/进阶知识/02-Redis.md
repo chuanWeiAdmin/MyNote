@@ -28,7 +28,7 @@
 | info             | 查看redis的统计信息                    |
 | select   index   | 切换数据库实例                         |
 | dbsize           | 查看数据库中key 的**个数**（只看个数） |
-| key  *           | 查看当前实例中所有的key信息            |
+| keys  *          | 查看当前实例中所有的key信息            |
 | flushdb          | 清空当前实例中所有数据                 |
 | flushall         | 清空所有实例中的所有数据               |
 | config get *     | 查看配置信息                           |
