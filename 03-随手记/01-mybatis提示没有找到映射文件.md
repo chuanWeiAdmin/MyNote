@@ -6,3 +6,4 @@
 
 1. 查看mapper.xml的**namespace**是不是对应的DAO全路径。
 2. 查看是不是这个mapper没有添加到mybatis-config.xml文件中
+
