@@ -45,11 +45,11 @@
 
 ##### 1.Eureka服务注册与发现
 
-- **服务治理**
+- ##### **服务治理**
 
   Spring Cloud 封装了 Netflix 公司开发的 Eureka 模块来实现服务治理，在传统的rpc远程调用框架中，管理每个服务与服务之间依赖关系比较复杂，管理比较复杂，所以需要使用服务治理，管理服务于服务之间依赖关系，可以实现服务调用、负载均衡、容错等，实现服务发现与注册。 
 
--   **服务注册与发现**：
+-   ##### **服务注册与发现**：
 
   Eureka采用了CS的设计架构，
 
@@ -88,6 +88,99 @@
       #关闭自我保护机制，保证不可用服务被及时踢除
       #enable-self-preservation: false
       #eviction-interval-timer-in-ms: 2000
+  ```
+
+- ##### 将生产者注册到Eureka
+
+  1. 添加pom依赖
+
+     ```xml
+     <!--eureka-client-->
+     <dependency>
+         <groupId>org.springframework.cloud</groupId>
+         <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+     </dependency>
+     ```
+
+  2. 更改yaml文件
+
+     ```yaml
+     eureka:
+       client:
+         #表示是否将自己注册进EurekaServer默认为true。
+         register-with-eureka: true
+         #是否从EurekaServer抓取已有的注册信息，默认为true。单节点无所谓，集群必须设置为true才能配合ribbon使用负载均衡
+         fetchRegistry: true
+         service-url:
+           #单机版
+           defaultZone: http://localhost:7001/eureka
+           # 集群版
+           #defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+       instance:
+           instance-id: payment8001
+           #访问路径可以显示IP地址
+           prefer-ip-address: true
+           #Eureka客户端向服务端发送心跳的时间间隔，单位为秒(默认是30秒)
+           #lease-renewal-interval-in-seconds: 1
+           #Eureka服务端在收到最后一次心跳后等待时间上限，单位为秒(默认是90秒)，超时将剔除服务
+           #lease-expiration-duration-in-seconds: 2
+     
+     ```
+  
+  3. **在主启动类中添加注解**
+  
+     ```java
+     @SpringBootApplication
+     @EnableEurekaClient
+     public class PaymentMain8001
+     {
+         public static void main(String[] args) {
+             SpringApplication.run(PaymentMain8001.class, args);
+         }
+     }
+     ```
+  
+- ##### 将消费者注册到 Eureka 中
+
+  **同服务者相同**
+
+- ##### Eureka 搭建服务端集群
+
+  相互调用相互守望
+
+  ```yaml
+  eureka:
+    instance:
+      hostname: eureka7001.com #eureka服务端的实例名称
+    client:
+      register-with-eureka: false     #false表示不向注册中心注册自己。
+      #false表示自己端就是注册中心，我的职责就是维护服务实例，并不需要去检索服务
+      fetch-registry: false    
+      
+      service-url:
+      #集群指向其它eureka
+        #defaultZone: http://eureka7002.com:7002/eureka/
+      #单机就是7001自己
+        defaultZone: http://eureka7001.com:7001/eureka/
+  ```
+
+- 使用生产者集群的时候出现的问题
+
+  使用 @Bean 标签的时候RestTemplate不具备负载均衡的能力，所以会报错
+
+  要在*配置类*中使用**@LoadBalanced注解赋予RestTemplate负载均衡的能力**
+
+  ```java
+  @Configuration
+  public class ApplicationContextConfig
+  {
+      //@Bean
+      @LoadBalanced //使用注解使 RestTemplate 具有负载均衡的能力
+      public RestTemplate getRestTemplate()
+      {
+          return new RestTemplate();
+      }
+  }
   ```
 
   
