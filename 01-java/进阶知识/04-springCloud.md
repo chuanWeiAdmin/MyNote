@@ -38,11 +38,11 @@
    
    ```
 
-****
 
-### 二.服务注册与发现
 
-#### 1.Eureka服务注册与发现
+## 二.服务注册与发现
+
+### 1.Eureka服务注册与发现
 
 - ##### **服务治理**
 
@@ -251,7 +251,7 @@
      ```java
      @SpringBootApplication
      @EnableEurekaClient		//这个注解之后可能不常用了
-     @EnableDiscoveryClient	//这个注解之后还会用到
+     @EnableDiscoveryClient	//这个注解之后还会用到***************
      public class PaymentMain8001
      {
          public static void main(String[] args) {
@@ -260,7 +260,7 @@
      }
      ```
 
-#### 2.Zookeeper服务注册与发现
+### 2.Zookeeper服务注册与发现
 
 - 服务提供者添加进注册中心
 
@@ -346,7 +346,7 @@
      }
      ```
 
-#### 3.consul 的注册和发现
+### 3.consul 的注册和发现
 
 - 微服务注册进consul
 
@@ -388,17 +388,15 @@
 
   **同上**
 
-****
+## 三.负载均衡
 
-### 三.负载均衡
-
-#### 1.Ribbon 实现负载均衡
+### 1.Ribbon 实现负载均衡
 
 - **Ribbon 是在客户端的一种负载均衡，软负载均衡**
 - *Ribbon 就是（负载均衡 + RestTemplate 调用）*
 - 
 
-#### 2.Ribbon 核心组件 IRule
+### 2.Ribbon 核心组件 IRule
 
 - 可以根据特定的算法从服务列表中选取一个要访问的服务（7种模式）
 
