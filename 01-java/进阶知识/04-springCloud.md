@@ -461,4 +461,68 @@
      }
      ```
 
-     
+
+### 3.OpenFeign服务接口调用
+
+**前言：Feign（*用着消费端*）是一个声明式的Web服务客户端，让编写Web服务客户端变得非常容易，只需创建一个接口并在接口上添加注解即可**
+
+*注：Feign已经停止更新*
+
+#### 1.pom文件
+
+```xml
+<dependency>
+    <!-- 1.添加Feign -->
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-openfeign</artifactId>
+</dependency>
+```
+
+#### 2.主启动类
+
+```java
+@SpringBootApplication
+@EnableFeignClients //******2.请注意 这里是激活 feign
+public class OrderFeignMain80 {
+    public static void main(String[] args) {
+        SpringApplication.run(OrderFeignMain80.class, args);
+    }
+}
+```
+
+#### 3.Feign 接口类
+
+```java
+@Component  // 将类交给容器，************* 一定不要忘了 ************
+@FeignClient(value = "CLOUD-PAYMENT-SERVICE")  // *******3.使用
+public interface PaymentFeignService {
+    @GetMapping(value = "/payment/get/{id}")  //这个一定要写吗？？？？
+    public CommonResult<Payment> getPaymentById(@PathVariable("id") Long id);
+    
+	@GetMapping(value = "/payment/feign/timeout")
+    public String paymentFeignTimeout();
+}
+```
+
+#### 4.Controller层代码
+
+```java
+@RestController
+@Slf4j
+public class OrderFeignController {
+    @Resource
+    private PaymentFeignService paymentFeignService;
+
+    @GetMapping(value = "/consumer/payment/get/{id}")
+    public CommonResult<Payment> getPaymentById(@PathVariable("id") Long id) {
+        return paymentFeignService.getPaymentById(id);
+    }
+    
+    @GetMapping(value = "/consumer/payment/feign/timeout")
+    public String paymentFeignTimeout() {
+        // OpenFeign客户端一般默认等待1秒钟
+        return paymentFeignService.paymentFeignTimeout();
+    }
+}
+```
+
