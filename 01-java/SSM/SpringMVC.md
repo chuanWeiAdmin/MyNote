@@ -2,7 +2,7 @@
 
 重点内容：DispatcherServlet 中央调度器
 
-![](..\..\资源\DispatcherServlet.png)
+![](.\..\..\99-资源\DispatcherServlet.png)
 
 ### 一.SpringMVC实现步骤
 
