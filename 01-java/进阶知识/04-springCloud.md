@@ -985,9 +985,161 @@ public class MyLogGateWayFilter implements GlobalFilter, Ordered {
 
 
 
+## 六.服务配置 服务中线
 
+### 1 Spring Config 配置中心搭建
 
+#### 1.1 服务端
 
+注：要将
 
+##### 1.1.1 pom 文件 
 
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-config-server</artifactId>
+</dependency>
+```
 
+##### 1.1.2 yml 文件
+
+注：要使用 文件名为  application.yml
+
+- application.yml  系统层面的配置文件 （**优先加载**）
+- bootstrap.yml  用户层面的配置文件
+
+```yaml
+spring:
+  application:
+    name:  cloud-config-center #注册进Eureka服务器的微服务名
+  cloud:
+    config:
+      server:
+        git:
+          #自己git仓库上地址
+          uri: git@github.com:zzyybs/springcloud-config.git #GitHub上面的git仓库名字
+		  ##搜索目录--仓库下面的项目名
+          search-paths:
+            - springcloud-config
+      ####读取分支
+      label: master
+```
+
+##### 1.1.3 启动类
+
+```java
+@SpringBootApplication
+@EnableConfigServer    //SpringConfig 的开启注解
+public class ConfigCenterMain3344 {
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigCenterMain3344.class, args);
+    }
+}
+```
+
+##### 1.1.4 访问规则
+
+http://config-3344.com:3344/master/config-dev.yml
+
+- config-3344.com  ： 相当于 localhost---如果没有配置host文件的话
+- master ：分支
+- config-dev.yml ： 文件名
+
+#### 1.2 客户端
+
+##### 1.2.1 pom文件
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <!-- 使用spring-cloud-starter-config -->
+    <artifactId>spring-cloud-starter-config</artifactId>
+</dependency>
+```
+
+##### 1.2.2 yml文件
+
+```yaml
+spring:
+  application:
+    name: config-client
+  cloud:
+    #Config客户端配置
+    config:
+      label: master #分支名称
+      name: config #配置文件名称
+      profile: dev #读取后缀名称   
+      #上述3个综合：master分支上config-dev.yml的配置文件被读取http://config-3344.com:3344/master/config-dev.yml
+      
+      uri: http://localhost:3344 #配置中心地址k
+```
+
+##### 1.2.3 控制层类
+
+```java
+@RestController
+public class ConfigClientController {
+    // 访问到的文件里面的配置内容
+    @Value("${config.info}")
+    private String configInfo;
+
+    @GetMapping("/configInfo")
+    public String getConfigInfo() {
+        return configInfo;
+    }
+}
+```
+
+#### 1.3 存在问题
+
+当在github中更改配置的时候，**服务端**可以访问到更改后的数据但是**客户端**不能访问到已经更改的数据
+
+#### 1.4 解决方案-手动版的自动刷新
+
+##### 1.4.1 pom模块引入actuator监控
+
+注：可以所有模块都加上  **网关不需要**
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
+
+##### 1.4.2 修改YML，暴露监控端口
+
+```yaml
+# 暴露监控端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+```
+
+##### 1.4.3 用@RefreshScope修饰业务类Controller修改
+
+```java
+@RestController
+@RefreshScope  //一定要加这个注解 ，没有这个注解不能刷新
+public class ConfigClientController {
+    // 访问到的文件里面的配置内容
+    @Value("${config.info}")
+    private String configInfo;
+
+    @GetMapping("/configInfo")
+    public String getConfigInfo() {
+        return configInfo;
+    }
+}
+```
+
+##### 1.4.4 手动使用post访问客户端
+
+可以使用工具发送 post 请求  url 为   http://localhost:3355/actuator/refresh  
+
+也可以使用doc命令发送请求
+
+curl -X POST "http://localhost:3355/actuator/refresh"
