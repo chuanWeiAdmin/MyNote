@@ -1110,8 +1110,10 @@ public class ConfigClientController {
 
 ##### 1.4.2 修改YML，暴露监控端口
 
+**注：有这种暴露端口什么东西的一定要加actuator**
+
 ```yaml
-# 暴露监控端点
+# 暴露监控端点 有这种暴露端口什么东西的一定要加 actuator
 management:
   endpoints:
     web:
@@ -1143,3 +1145,93 @@ public class ConfigClientController {
 也可以使用doc命令发送请求
 
 curl -X POST "http://localhost:3355/actuator/refresh"
+
+**注：如果想实现动态刷新请看下一节**
+
+### 2.SpringCloud Bus 消息总线
+
+#### 2.1 设计思想
+
+- 由消息总线通知客户端A，再由客户端A通知其他客户端
+- 由消息总线通知服务端，由服务端通知其他客户端
+
+#### 2.2 构建项目
+
+注 ： 一定要有一个可以正常运行的RebbitMQ 的运行环境
+
+另外 SpringCloud Bus 还支持 kafka
+
+##### 2.2.1 服务端 更改配置
+
+- 改pom文件
+
+  ```xml
+  <!--添加消息总线RabbitMQ支持-->
+  <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-bus-amqp</artifactId>
+  </dependency>
+  ```
+
+- 改服务端的 application.yml 
+
+  ```yaml
+  #注意 服务端的 rabbitmq 要顶头写
+  #rabbitmq相关配置
+  rabbitmq:
+      host: localhost
+      port: 5672
+      username: guest
+      password: guest
+  
+  #注意暴露端点一定要加 actuator
+  ##rabbitmq相关配置,暴露bus刷新配置的端点
+  management:
+    endpoints: #暴露bus刷新配置的端点
+      web:
+        exposure:
+          include: 'bus-refresh'  
+          #这里为什么是 bus-refresh , 社会上的事少打听 知道太多对你没好处
+  ```
+
+  - **注意1：服务端的 rabbitmq 要顶头写**
+  - **注意2：暴露端点一定要加 actuator**
+
+##### 2.2.2 客户端 更改配置
+
+- pom 文件修改
+
+  ```xml
+  <!--添加消息总线RabbitMQ支持--> <!-- 同上 -->
+  <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-bus-amqp</artifactId>
+  </dependency>
+  ```
+
+- 服务端的 bootstrap.yml 修改
+
+  ```yaml
+  spring:
+    application:
+      name: config-client
+    cloud:
+      #Config客户端配置
+      config:
+      ...
+    # 特别注意 这个地方的 rabbitmq 是在spring下面的 一定要记住
+    rabbitmq:
+      host: localhost
+      port: 5672
+      username: guest
+      password: guest
+      
+  # 暴露监控端点
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: "*"    
+  ```
+
+  - 特别注意：服务端的 rabbitmq 一定要是在spring下面的，不要写错了
