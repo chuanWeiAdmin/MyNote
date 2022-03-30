@@ -815,6 +815,8 @@ public String str_fallbackMethod() {
 
 
 
+
+
 ## 五:网关
 
 ### 1.新一代网关 getway
@@ -985,7 +987,7 @@ public class MyLogGateWayFilter implements GlobalFilter, Ordered {
 
 
 
-## 六.服务配置 服务中线
+## 六.服务配置 服务总线
 
 ### 1 Spring Config 配置中心搭建
 
@@ -1235,3 +1237,946 @@ curl -X POST "http://localhost:3355/actuator/refresh"
   ```
 
   - 特别注意：服务端的 rabbitmq 一定要是在spring下面的，不要写错了
+
+##### 2.2.3 修改配置文件并发送post请求
+
+curl -X POST "http://localhost:3344/actuator/bus-refresh"
+
+**一次发送处处生效**
+
+
+
+#### 2.3 动态刷新的定点通知
+
+curl -X POST "http://localhost:3344/actuator/bus-refresh/config-client:3355"
+
+- 同上有区别  这个只通知了 3355  
+
+- 通知的公式  http://localhost:配置中心的端口号/actuator/bus-refresh/{destination}
+
+- {destination} 目的地是 微服务+端口号==config-client:3355
+
+  ```yaml
+  server:
+    port: 3355
+  
+  spring:
+    application:
+      name: config-client
+  ```
+
+  
+
+## 七.消息驱动 
+
+**SpringCloud Stream**
+
+### 1.消息驱动概述
+
+#### 1.1 是什么
+
+- 为了解决同一个项目下存在多个MQ的情况
+- 屏蔽底层消息中间件的差异,降低切换成本，统一消息的编程模型
+- 目前只支持  Rabbit MQ 和 Kafka
+
+1.2 编码 API 和常用的注解
+
+| 组成            | 说明                                                         |
+| --------------- | ------------------------------------------------------------ |
+| Middleware      | 中间件，目前只支持Rabbit MQ 和 Kafka                         |
+| Binder          | Binder是应用与消息中间件之间的封装，目前事项了Rabbit MQ 和 Kafka，通过Binder可以很方便的连接中间件，可以动态的改变消息类型(对应Kafka的topic，Rabbit MQ的exchange)，这些都是通过配置文件来实现的 |
+| @Input          | 注解标识输入通道，通过该输入通道接收到的消息进入应用程序     |
+| @Output         | 注解标识输出通道，发布的消息将通过该通道离开应用程序         |
+| @StreamListener | 监听队列，用于消费者的队列的消息接收                         |
+| @EnableBinding  | 指定信道channel和exchange绑定在一起                          |
+
+
+
+### 2.生产者的构建
+
+#### 2.1 pom 文件
+
+```xml
+<!-- stream  整合 rabbit 如果是Kafka 那就将下面的东西换成Kafka -->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-stream-rabbit</artifactId>
+</dependency>
+```
+
+#### 2.2 yml文件
+
+```yaml
+server:
+  port: 8801
+
+spring:
+  application:
+    name: cloud-stream-provider
+  cloud:
+      stream:
+        binders: # 在此处配置要绑定的rabbitmq的服务信息；
+          defaultRabbit: # 表示定义的名称，用于于binding整合
+            type: rabbit # 消息组件类型
+            environment: # 设置rabbitmq的相关的环境配置
+              spring:
+                rabbitmq:
+                  host: localhost
+                  port: 5672
+                  username: guest
+                  password: guest
+        bindings: # 服务的整合处理
+          # 消息的生产者用这个 output 
+          output: # 这个名字是一个通道的名称
+            destination: studyExchange # 表示要使用的Exchange名称定义
+            content-type: application/json # 设置消息类型，本次为json，文本则设置“text/plain”
+            binder: defaultRabbit # 设置要绑定的消息服务的具体设置
+
+eureka:
+  client: # 客户端进行Eureka注册的配置
+    service-url:
+      defaultZone: http://localhost:7001/eureka
+  instance:
+    lease-renewal-interval-in-seconds: 2 # 设置心跳的时间间隔（默认是30秒）
+    lease-expiration-duration-in-seconds: 5 # 如果现在超过了5秒的间隔（默认是90秒）
+    instance-id: send-8801.com  # 在信息列表时显示主机名称
+    prefer-ip-address: true     # 访问的路径变为IP地址
+```
+
+#### 2.3主启动
+
+和普通的启动类都一样，没有区别
+
+#### 2.4 控制类
+
+也没有区别
+
+#### 2.5 业务类
+
+**注：重点在这里**
+
+- IMessageProvider：自己定义的一个接口，不用太过在意，**(懒的写了，知道这个就行)**
+- 发送消息的方法 output.send(MessageBuilder.withPayload("消息").build());
+- Source.class 生产者的话就再EnableBinding 添加 Source.class 表示建立一个通道
+
+```java
+// 重点 这里不再使用 @Service 而是使用 Stream 的注解
+@EnableBinding(Source.class) //定义消息的推送管道，注意Source别引错包了
+public class MessageProviderImpl implements IMessageProvider {
+    @Resource
+    private MessageChannel output; // 消息发送管道
+
+    @Override
+    public String send() {
+        String serial = UUID.randomUUID().toString();
+        output.send(MessageBuilder.withPayload(serial).build());
+        System.out.println("*****serial: " + serial);
+        return null;
+    }
+}
+```
+
+
+
+### 3.消息驱动 消费者
+
+#### 3.1 pom 文件
+
+同上没有变化，都是一个pom文件
+
+#### 3.2 yml 文件
+
+```yaml
+server:
+  port: 8802
+
+spring:
+  application:
+    name: cloud-stream-consumer
+  cloud:
+      stream:
+        binders: # 在此处配置要绑定的rabbitmq的服务信息；
+          defaultRabbit: # 表示定义的名称，用于于binding整合
+            type: rabbit # 消息组件类型
+            environment: # 设置rabbitmq的相关的环境配置
+              spring:
+                rabbitmq:
+                  host: localhost
+                  port: 5672
+                  username: guest
+                  password: guest
+        bindings: # 服务的整合处理
+          # 消费者就使用 input 这个
+          input: # 这个名字是一个通道的名称
+            destination: studyExchange # 表示要使用的Exchange名称定义
+            content-type: application/json # 设置消息类型，本次为对象json，如果是文本则设置“text/plain”
+            binder: defaultRabbit # 设置要绑定的消息服务的具体设置
+
+eureka:
+  client: # 客户端进行Eureka注册的配置
+    service-url:
+      defaultZone: http://localhost:7001/eureka
+  instance:
+    lease-renewal-interval-in-seconds: 2 # 设置心跳的时间间隔（默认是30秒）
+    lease-expiration-duration-in-seconds: 5 # 如果现在超过了5秒的间隔（默认是90秒）
+    instance-id: receive-8802.com  # 在信息列表时显示主机名称
+    prefer-ip-address: true     # 访问的路径变为IP地址
+```
+
+#### 3.3 主启动类
+
+同之前一样，没有区别
+
+#### 3.4 控制类
+
+```java
+@Component
+@EnableBinding(Sink.class) // 消费者就要用 Sink
+public class ReceiveMessageListenerController {
+    @Value("${server.port}")
+    private String serverPort;
+
+    @StreamListener(Sink.INPUT)
+    public void input(Message<String> message) {
+        System.out.println("消费者1号,----->接受到的消息: " + message.getPayload() + "\t  "+                   							"port: " + serverPort);
+    }
+}
+```
+
+**当请求输出端的时候，在输入端就会展示出相对应的数据**
+
+
+
+### 4.分组消费与持久化
+
+#### 4.1 出现的问题
+
+- 存在重复消费的问题
+- 消息持久化的问题
+
+#### 4.2 分组解决重复消费的问题
+
+*注意在Stream中处于同一个group中的多个消费者是竞争关系，就能够保证消息只会被其中一个应用消费一次。*
+**不同组是可以全面消费的(重复消费)，**
+**同一组内会发生竞争关系，只有其中一个可以消费。**
+
+- 使用配置文件分组
+
+  ```yaml
+  spring:
+    application:
+      name: cloud-stream-consumer
+    cloud:
+        stream:
+          binders: # 在此处配置要绑定的rabbitmq的服务信息；
+            defaultRabbit: # 表示定义的名称，用于于binding整合
+             #..... 同上的配置，这里就不写了
+          bindings: # 服务的整合处理
+            input: # 这个名字是一个通道的名称
+              destination: studyExchange # 表示要使用的Exchange名称定义
+              content-type: application/json # 设置消息类型，本次为对象json，如果是文本则设置“text/plain”
+              binder: defaultRabbit # 设置要绑定的消息服务的具体设置
+              # 通过 group 分组 后面的是分组的名字
+              group: atguiguA
+  ```
+
+#### 4.3 分组解决持久化问题
+
+**已经分组的消费端就支持持久化**
+
+
+
+## 八.分布式请求链路跟踪
+
+### 1 概述
+
+ 在微服务框架中，一个由客户端发起的请求在后端系统中会经过多个不同的的服务节点调用来协同产生最后的请求结果，每一个前段请求都会形成一条复杂的分布式服务调用链路，链路中的任何一环出现高延时或错误都会引起整个请求最后的失败。
+
+**解决方案 Sleuth+zipkin 实现请求链路的跟踪 **
+
+
+
+### 2 搭建
+
+**前情提要 ：要先下载搭建zipkin环境**
+
+#### 2.1 pom文件
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-zipkin</artifactId>
+</dependency>
+```
+
+#### 2.1 yaml 文件
+
+```yaml
+spring:
+  application:
+    name: cloud-payment-service
+  zipkin:
+      base-url: http://localhost:9411
+  sleuth:
+    sampler:
+    #采样率值介于 0 到 1 之间，1 则表示全部采集
+    probability: 1
+```
+
+
+
+### 3 查询链路过程
+
+打开浏览器访问：http://localhost:9411  查看链路过程
+
+
+
+## 九.Nacos 服务注册和配置中心
+
+注：要想使用Nacos一定要先下载运行 
+
+**使用docker搭建Nacos环境 https://www.cnblogs.com/wqp001/p/15329529.html**
+
+docker run -d --name nacos -p 8848:8848 -e PREFER_HOST_MODE=hostname -e MODE=standalone nacos/nacos-server
+
+
+
+### 1.Nacos作为服务注册中心
+
+#### 1.1 服务提供者
+
+1.1.1 pom文件
+
+- 父pom
+
+  ```xml
+  <!-- 引入spring cloud alibaba -->
+  <dependency>
+  	<groupId>com.alibaba.cloud</groupId>
+  	<artifactId>spring-cloud-alibaba-dependencies</artifactId>
+  	<version>2.1.0.RELEASE</version>
+  	<type>pom</type>
+  	<scope>import</scope>
+  </dependency>
+  ```
+
+- 本模块的 pom
+
+  ```xml
+  <!--SpringCloud ailibaba nacos -->
+  <dependency>
+  	<groupId>com.alibaba.cloud</groupId>
+  	<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+  </dependency>
+  ```
+
+1.1.2 yml
+
+```yaml
+server:
+  port: 9001
+
+spring:
+  application:
+    name: nacos-payment-provider   #这个就是在nacos上的地址
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848 #配置Nacos地址
+# 将端口暴露出去
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+```
+
+1.1.3 主启动类
+
+```java
+@EnableDiscoveryClient  //使用这个注解开启将服务添加到注册中心
+@SpringBootApplication
+public class PaymentMain9001 {
+    public static void main(String[] args) {
+        SpringApplication.run(PaymentMain9001.class, args);
+    }
+}
+```
+
+1.1.4 业务类 
+
+没有什么特殊的，就是普普通通的业务类
+
+```java
+@RestController
+public class PaymentController {
+    @Value("${server.port}")
+    private String serverPort;
+
+    @GetMapping(value = "/payment/nacos/{id}")
+    public String getPayment(@PathVariable("id") Integer id) {
+        return "nacos registry, serverPort: " + serverPort + "\t id" + id;
+    }
+}
+```
+
+
+
+#### 1.2 服务消费者
+
+注：使用远程调用一定是 RestTemplate 结合 Ribbon 就一定会有一个配置类，配置类中一定会有一个@LoadBalanced注解
+
+1.2.1 pom 文件
+
+**同提供者 没有任何区别**
+
+1.2.2 yaml 文件
+
+```yaml
+server:
+  port: 83
+
+spring:
+  application:
+    name: nacos-order-consumer
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+
+#消费者将要去访问的微服务名称(注册成功进nacos的微服务提供者)
+service-url: #目的是在业务类中使用@Value将下面这个值注入，调用地址写在配置文件中
+  nacos-user-service: http://nacos-payment-provider
+```
+
+1.2.3 主启动类
+
+没有区别
+
+1.2.4 配置类
+
+```java
+@Configuration  //是配置类一定要加这个注解
+public class ApplicationContextConfig {
+    @Bean
+    @LoadBalanced  //RestTemplate 结合 Ribbon一定要加这个注解
+    public RestTemplate getRestTemplate() {
+        return new RestTemplate();
+    }
+}
+```
+
+1.2.5 业务类
+
+```java
+@RestController
+public class OrderNacosController {
+    @Resource
+    private RestTemplate restTemplate;
+
+    //通过配置文件注入的数据
+    @Value("${service-url.nacos-user-service}")
+    private String serverURL; 
+    //该数据为 服务提供者在注册中心的名字，即spring.application.name: 服务名称
+
+    @GetMapping(value = "/consumer/payment/nacos/{id}")
+    public String paymentInfo(@PathVariable("id") Long id) {
+        return restTemplate.getForObject(serverURL + "/payment/nacos/" + id, String.class);
+    }
+
+}
+```
+
+### 2.Nacos 作为配置中心
+
+**注意 ：nacos作为配置中心 主要的配置一定要写在 bootstrap.yml 中**
+
+#### 2.1 基础配置
+
+2.1.1 pom 文件
+
+**只要是跟Nacos集中配置相关的就将下面两个加上**
+
+```xml
+<!--nacos-config-->
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+</dependency>
+<!--nacos-discovery-->
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+</dependency>
+```
+
+2.1.2 yml 文件
+
+- application.yml
+
+  ```yaml
+  spring:
+    profiles:
+      active: dev # 表示开发环境
+      #active: test # 表示测试环境
+      #active: info
+  ```
+
+- bootstrap.yml
+
+  ```yaml
+  # nacos配置
+  server:
+    port: 3377
+  
+  spring:
+    application:
+      name: nacos-config-client
+    cloud:
+      nacos:
+        discovery:
+          server-addr: localhost:8848 #Nacos服务注册中心地址
+        config:
+          server-addr: localhost:8848 #Nacos作为配置中心地址
+          file-extension: yaml #指定yaml格式的配置,注意 这里写的是什么在Nacos中一定要写的是什么不能写错了
+          
+  ```
+
+- 为什么会有两个配置文件(其实只有一个也可以)
+
+  - Nacos同springcloud-config一样，在项目初始化时，要保证先从配置中心进行配置拉取，拉取配置之后，才能保证项目的正常启动。
+  - springboot中配置文件的加载是存在优先级顺序的，**bootstrap**优先级高于**application**
+
+2.1.3 主启动类
+
+同其他的没有区别
+
+2.1.4  业务类
+
+同spring config 没有区别，需要注意的是要加一个  @RefreshScope  让代码支持Nacos的动态刷新
+
+```java
+@RestController
+@RefreshScope //支持Nacos的动态刷新功能。
+public class ConfigClientController {
+    @Value("${config.info}")
+    private String configInfo;
+
+    @GetMapping("/config/info")
+    public String getConfigInfo() {
+        return configInfo;
+    }
+}
+```
+
+2.1.5 Nacos中的匹配规则
+
+ **最后公式**：${spring.application.name}-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+
+- 对应上面的DataId nacos-config-client-dev.yaml
+- 其中：spring.profiles.active 可以没有，最好加上，要不然会有莫名其妙的问题（不是必须有的的东西）
+
+![](.\..\..\99-资源\Nacos 配置中心配置规则.bmp)
+
+
+
+#### 2.2 分类配置
+
+2.2.1 DataID方案
+
+2.2.2 Group方案
+
+2.2.3 Namespace方案
+
+```yaml
+spring:
+  application:
+    name: nacos-config-client
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 121.4.184.80:8848 #Nacos服务注册中心地址
+      config:
+        server-addr: 121.4.184.80:8848 #Nacos作为配置中心地址
+        file-extension: yaml #指定yaml格式的配置
+        group: DEV_GROUP  #指定组别
+        namespace: 7d8f0f5a-6a53-4785-9686-dd460158e5d4 #指定命名空间的id
+```
+
+
+
+### 3 Nacos的集群和持久化配置
+
+别多哔哔，直接百度
+
+
+
+
+
+## 十.Sentinel实现熔断与限流
+
+### 1 初始化演示工程
+
+#### 1.1 pom文件
+
+```xml
+<dependency><!-- 引入自己定义的api通用包，可以使用Payment支付Entity -->
+    <groupId>com.atguigu.springcloud</groupId>
+    <artifactId>cloud-api-commons</artifactId>
+    <version>${project.version}</version>
+</dependency>
+<!--SpringCloud ailibaba nacos -->
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+</dependency>
+<!--SpringCloud ailibaba sentinel-datasource-nacos 后续做持久化用到-->
+<dependency>
+    <groupId>com.alibaba.csp</groupId>
+    <artifactId>sentinel-datasource-nacos</artifactId>
+</dependency>
+```
+
+#### 1.2 yaml 文件
+
+```yaml
+spring:
+  application:
+    name: cloudalibaba-sentinel-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 121.4.184.80:2222 #Nacos服务注册中心地址
+    sentinel:
+      transport:
+        #配置Sentinel dashboard地址
+        dashboard: 121.4.184.80:8080 #配置Sentinel dashboard地址
+        #默认8719端口，假如被占用会自动从8719开始依次+1扫描,直至找到未被占用的端口
+        port: 8719
+```
+
+#### 1.3 主启动类
+
+```java
+@EnableDiscoveryClient
+@SpringBootApplication
+public class MainApp8401 {
+    public static void main(String[] args) {
+        SpringApplication.run(MainApp8401.class, args);
+    }
+}
+```
+
+#### 1.4 注
+
+- sentinel 使用的是懒加载，要访问一次才能在页面上显示出来
+
+
+
+### 2 流控规则
+
+#### 2.1 基本介绍
+
+- 资源名：唯一名称，请求路径（uri）
+- 针对来源：sentinel可以针对调用者进行限流，默认default（不区分来源）
+- 阈值类型/单机阈值
+  - QPS（每秒的请求数量）：当 api 的QPS达到阈值的时候，进行限流
+  - 线程数：当调用该 api 的线程数达到阈值的时候，进行限流
+- 是否集群：不需要集群
+- 流控模式：
+  - 直接：api 达到限流条件时，直接限流
+  - 关联：当关联的资源达到阈值的时，就限流自己
+  - 链路：只记录指定链路上的流量（指定资源从入口资源进来的流量，如果到达阈值，就进行限流）【api级别只针对来源】
+- 流控效果：
+  - 快速失败：直接失败，抛异常
+  - WarmUp ：根据codeFactor（冷加载因子，默认是3）的值，从阈值/codeFactor ，经过预热时长，才打到设置的QPS阈值
+  - 排队等待：匀速排队，请求以匀速的速度通过，阈值类型必须设置为QPS，否则无效
+
+### 3 降级规则
+
+注：sentinel 没有半开状态
+
+#### 3.1 基本介绍
+
+![](.\..\..\99-资源\降级示例.bmp)
+
+- RT （平均响应时间，秒级）
+  - 平均响应时间 **超出阈值** 且 **在时间窗口内通过的请求>=5** ,两个条件同时满足后触发降级
+  - 窗口期过后关闭断路器
+  - RT最大 4900（更大的需要通过 -Dcsp.sentinel.statistic.max.rt=XXXX才能生效）
+- 异常比例（秒级）
+  - QPS >= 5 且异常比例（秒级统计）超过阈值时，触发降级；时间窗口结束后，关闭降级
+- 异常数（分钟级）
+  - 异常数（分钟统计）超过阈值时，触发降级，时间窗口结束后，关闭降级
+
+
+
+### 4 热点 key 限流
+
+#### 4.1代码
+
+```java
+@GetMapping("/testHotKey")
+@SentinelResource(value = "testHotKey", blockHandler = "deal_testHotKey")
+// 上面 value 中的值就是要放在页面上资源名的值
+// blockHandler 表达异常的时候要走的错误方法
+public String testHotKey(@RequestParam(value = "p1", required = false) String p1,
+                         @RequestParam(value = "p2", required = false) String p2) {
+    //int age = 10/0;
+    return "------testHotKey";
+}
+// 前边参数同方法一样 ， 后面加一个 BlockException
+public String deal_testHotKey(String p1, String p2, BlockException exception) {
+
+    return  "------deal_testHotKey,o(╥﹏╥)o";  //sentinel系统默认的提示：Blocked by Sentinel (flow limiting)
+}
+```
+
+
+
+- **注 ：当使用了SentinelResource 注解的时候一定要配置兜底的异常方法**
+- @SentinelResource 只会识别配置的异常，系统内的异常要另外添加注解
+
+### 5 系统规则
+
+系统保护规则是从应用级别的入口流量进行控制，从单台机器的 load 、cpu 使用率、平局RT 、入口QPS和并发线程等几个纬度监控应用指标，让系统尽可能跑在最大吞吐量的同时保证系统的整体稳定性
+
+系统保护规则是应用整体纬度的，而不是资源纬度的，并且对**入口流量生效**。入口流量指的是进入应用的流量（EntryType.IN）,比如Web 服务或Dubbo服务端接收请求，都属于入口流量
+
+
+
+系统规则支持以下的模式
+
+- Load自适应（仅对Linux/Unix-like 机器生效）：系统的load作为启发指标，进行自适应系统保护。当系统load超过设定的启发值，且系统当前的并发线程数超过估算的系统容量时才会触发系统保护（BBR阶段）系统容量有系统的 maxQPS*minRT 估算得出。设定的查考值一般是 CPU cores * 2.5
+- CPU usage(1.5.0+版本)：当系统CPU使用率超过阈值触发系统保护（取值范围0.0-1.0），比较灵敏
+- 平局 RT ：当单台机器上的所有入口流量的平均 RT 达到阈值即触发系统保护，单位为毫秒
+- 并发线程数：当单台机器上所有入口流量的并发线程达到阈值即触发系统保护
+- 入口 QPS：当单台机器上所有入口流量的 QPS 达到阈值即触发系统保护
+
+
+
+### 6 @SentinelResource
+
+#### 6.1 客户自定义限流处理逻辑
+
+- 自定义的异常处理类
+
+  ```java
+  public class CustomerBlockHandler {
+      // 返回值跟业务类一样就行，问题 如果不一样会怎么样
+      //事实证明这里的返回值必须跟业务类相同，不然会报错
+      public static CommonResult handlerException(BlockException exception) {
+          return new CommonResult(4444, "按客戶自定义,global handlerException----1");
+      }
+  }
+  ```
+
+- 业务类
+
+  ```java
+  @GetMapping("/rateLimit/customerBlockHandler")
+  @SentinelResource(value = "customerBlockHandler",
+          blockHandlerClass = CustomerBlockHandler.class,  // 异常处理的类
+          blockHandler = "handlerException2")  //要使用异常处理类，中的方法
+  public CommonResult customerBlockHandler() {
+      return new CommonResult(200, "按客戶自定义", new Payment(2020L, "serial003"));
+  }
+  ```
+
+- 总结
+
+  ![](.\..\..\99-资源\自定义异常处理.bmp)
+
+#### 6.2 更多注解属性说明
+
+知道就行 ，但是我不知道
+
+
+
+### 7 服务熔断
+
+#### 7.1 Ribbon系列
+
+- 配置类---(同其他的一样)
+
+  ```java
+  @Configuration
+  public class ApplicationContextConfig {
+      @Bean
+      @LoadBalanced
+      public RestTemplate getRestTemplate() {
+          return new RestTemplate();
+      }
+  }
+  ```
+
+- 业务类
+
+  ```java
+  
+  @RestController
+  @Slf4j
+  public class CircleBreakerController {
+      public static final String SERVICE_URL = "http://nacos-payment-provider";
+  
+      @Resource
+      private RestTemplate restTemplate;
+  
+      @RequestMapping("/consumer/fallback/{id}")
+      @SentinelResource(value = "fallback", fallback = "handlerFallback", blockHandler = "blockHandler",
+              exceptionsToIgnore = {IllegalArgumentException.class})
+      public CommonResult<Payment> fallback(@PathVariable Long id) {
+          CommonResult<Payment> result = restTemplate.getForObject(SERVICE_URL + "/paymentSQL/" + id, CommonResult.class, id);
+  
+          if (id == 4) {
+              throw new IllegalArgumentException("IllegalArgumentException,非法参数异常....");
+          } else if (result.getData() == null) {
+              throw new NullPointerException("NullPointerException,该ID没有对应记录,空指针异常");
+          }
+  
+          return result;
+      }
+  
+      //本例是fallback
+      public CommonResult handlerFallback(@PathVariable Long id, Throwable e) {
+          Payment payment = new Payment(id, "null");
+          return new CommonResult<>(444, "兜底异常handlerFallback,exception内容  " 
+                                    + e.getMessage(), payment);
+      }
+  
+      //本例是blockHandler
+      public CommonResult blockHandler(@PathVariable Long id, BlockException blockException) {
+          Payment payment = new Payment(id, "null");
+          return new CommonResult<>(445, "blockHandler-sentinel限流,无此流水: blockException  " 
+                                    + blockException.getMessage(), payment);
+      }
+  }
+  
+  ```
+
+
+
+#### 7.2 Feign系列
+
+- yaml 文件
+
+  ```yml
+  # 激活Sentinel对Feign的支持
+  feign:
+    sentinel:
+      enabled: true
+  ```
+
+- 主启动类
+
+  ```java
+  @EnableDiscoveryClient
+  @SpringBootApplication
+  @EnableFeignClients    //使用Feign要添加这个注解
+  public class OrderNacosMain84 {
+      public static void main(String[] args) {
+          SpringApplication.run(OrderNacosMain84.class, args);
+      }
+  }
+  ```
+
+- Feign接口
+
+  ```java
+  @FeignClient(value = "nacos-payment-provider",     // 生产者注册进nacos中的名字
+               fallback = PaymentFallbackService.class)  //实现类
+  public interface PaymentService {
+      @GetMapping(value = "/paymentSQL/{id}")
+      public CommonResult<Payment> paymentSQL(@PathVariable("id") Long id);
+  }
+  ```
+
+- 实现类
+
+  ```java
+  @Component  //一定要记得将类加入到容器中
+  public class PaymentFallbackService implements PaymentService {
+      @Override
+      public CommonResult<Payment> paymentSQL(Long id) {
+          return new CommonResult<>(44444, "服务降级返回,---PaymentFallbackService", 
+                                    new Payment(id, "errorSerial"));
+      }
+  }
+  ```
+
+- 业务类
+
+  ```java
+  @Resource
+  private PaymentService paymentService;
+  
+  @GetMapping(value = "/consumer/paymentSQL/{id}")
+  public CommonResult<Payment> paymentSQL(@PathVariable("id") Long id) {
+      return paymentService.paymentSQL(id);
+  }
+  ```
+
+  
+
+### 8 规则持久化
+
+#### 8.1 pom文件
+
+```xml
+<!--SpringCloud ailibaba sentinel-datasource-nacos 后续做持久化用到-->
+<dependency>
+    <groupId>com.alibaba.csp</groupId>
+    <artifactId>sentinel-datasource-nacos</artifactId>
+</dependency>
+```
+
+#### 8.2 yml配置
+
+```yaml
+spring:
+  application:
+    name: cloudalibaba-sentinel-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 121.4.184.80:2222 #Nacos服务注册中心地址
+    sentinel:
+      transport:
+        dashboard: localhost:8080 #配置Sentinel dashboard地址
+        port: 8719
+      datasource:
+        ds1:
+          nacos:
+            server-addr: 121.4.184.80:2222
+            dataId: cloudalibaba-sentinel-service
+            groupId: DEFAULT_GROUP
+            data-type: json
+            rule-type: flow
+```
+
+#### 8.3 nacos配置
+
+在nacos中配置一个名为 ${spring.application.name} 的配置文件
+
+```json
+[
+    {
+        "resource": "/rateLimit/byUrl",
+        "limitApp": "default",
+        "grade": 1,
+        "count": 1,
+        "strategy": 0,
+        "controlBehavior": 0,
+        "clusterMode": false
+    }
+]
+```
+
+- resource：资源名称；
+- limitApp：来源应用；
+- grade：阈值类型，0表示线程数，1表示QPS；
+- count：单机阈值；
+- strategy：流控模式，0表示直接，1表示关联，2表示链路；
+- controlBehavior：流控效果，0表示快速失败，1表示Warm Up，2表示排队等待；
+- clusterMode：是否集群。
+
