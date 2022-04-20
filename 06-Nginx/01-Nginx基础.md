@@ -26,6 +26,23 @@ client_body_temp fastcgi_temp proxy_temp scgi_temp
 
 nginx的主程序
 
+### 4 nginx 启动
+
+```txt
+1、验证配置文件
+./nginx -tc 配置文件(nginx.conf)
+或者
+./nginx -t -c  配置文件(nginx.conf)
+
+2、指定配置文件启动
+./nginx -c  配置文件(nginx.conf)
+
+3、指定配置文件重启
+./nginx -s reload -c  配置文件(nginx.conf)
+```
+
+
+
 ## 二.基本运行原理
 
 ![](.\..\99-资源\nginx运行原理.jpg)
@@ -267,11 +284,11 @@ location ~*/(css|img|js) {
 
 ```nginx
 location /css {
-	alias /usr/local/nginx/static;
+	alias /usr/local/nginx/static/;
 	index index.html index.htm;
 }
 location /js {
-	root /usr/local/nginx/static;
+	root /usr/local/nginx/static/;
 	index index.html index.htm;
 }
 ```
@@ -288,7 +305,7 @@ location /js {
 
 1. alias指定的目录是准确的，即location匹配访问的path目录下的文件直接是在alias目录下查找的； 
 2. root指定的目录是location匹配访问的path目录的上一级目录,这个path目录一定要是真实存在root指定目录下的；
-3. 使用alias标签的目录块中不能使用rewrite的break（具体原因不明）；另外，alias指定的目录后面必须要加上"/"符号！！ 
+3. 使用alias标签的目录块中不能使用rewrite的break（具体原因不明）；另外，**alias指定的目录后面必须要加上"/"符号！！** 
 4. alias虚拟目录配置中，location匹配的path目录如果后面不带"/"，那么访问的url地址中这个path目录后面加不加"/"不影响访问，访问时它会自动加上"/"； 但是如果location匹配的path目录后面加上"/"，那么访问的url地址中这个path目录必须要加上"/"，访问时它不会自动加上"/"。如果不加上"/"，访问就会失败！ 
 5. root目录配置中，location匹配的path目录后面带不带"/"，都不会影响访问。
 

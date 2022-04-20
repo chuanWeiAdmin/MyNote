@@ -35,3 +35,18 @@ mybatis-plus:
   - 大于等于  <![CDATA[ >= ]]>
   -  小于等于   <![CDATA[ <= ]]>
 
+
+
+#### Mybatis 中使用模糊查询
+
+```mysql
+--方式1：这种方式，简单，但是无法防止SQL注入，所以不推荐使用
+LIKE  '%${name}%'
+
+-- 方式2：#
+LIKE "%"#{name}"%"
+
+-- 方式3：字符串拼接
+AND name LIKE CONCAT(CONCAT('%',#{name},'%'))
+```
+

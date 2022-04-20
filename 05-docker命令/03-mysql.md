@@ -16,6 +16,12 @@ docker exec -it eea /bin/bash
 
 ### 3 修改远程访问的权限
 
+```bash
+mysql -uroot -p123456
+```
+
+
+
 ```sh
 ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root';
 ```
