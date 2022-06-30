@@ -28,6 +28,8 @@ nginx的主程序
 
 ### 4 nginx 启动
 
+**通过文件启动**
+
 ```txt
 1、验证配置文件
 ./nginx -tc 配置文件(nginx.conf)
