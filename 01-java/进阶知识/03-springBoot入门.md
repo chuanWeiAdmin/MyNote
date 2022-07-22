@@ -70,7 +70,7 @@
 - applcation.properties中的配置
 
   ```properties
-  schoole.name="myName"
+  school.name="myName"
   school.websit="myweb"
   ```
 

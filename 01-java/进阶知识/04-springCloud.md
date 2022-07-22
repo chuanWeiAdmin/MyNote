@@ -1554,7 +1554,7 @@ docker run -d --name nacos -p 8848:8848 -e PREFER_HOST_MODE=hostname -e MODE=sta
   <dependency>
   	<groupId>com.alibaba.cloud</groupId>
   	<artifactId>spring-cloud-alibaba-dependencies</artifactId>
-  	<version>2.1.0.RELEASE</version>
+  	<version>2.2.6.RELEASE</version>
   	<type>pom</type>
   	<scope>import</scope>
   </dependency>
@@ -1568,6 +1568,28 @@ docker run -d --name nacos -p 8848:8848 -e PREFER_HOST_MODE=hostname -e MODE=sta
   	<groupId>com.alibaba.cloud</groupId>
   	<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
   </dependency>
+  ```
+  
+- 注：nacos 配置的版本一定要和 springboot的版本对应
+
+  ```xml
+  <parent>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-parent</artifactId>
+      <version>2.2.6.RELEASE</version>  <!-- 这个地方一定要和上面对应 -->
+  </parent>
+  <dependencyManagement>
+      <dependencies>
+          <!-- 声明 springCloud Alibaba 版本 -->
+          <dependency>
+              <groupId>com.alibaba.cloud</groupId>
+              <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+              <version>2.2.6.RELEASE</version>   <!-- 这个地方一定要和上面对应 -->
+              <type>pom</type>
+              <scope>import</scope>
+          </dependency>
+      </dependencies>
+  </dependencyManagement>
   ```
 
 1.1.2 yml
@@ -1654,6 +1676,11 @@ service-url: #目的是在业务类中使用@Value将下面这个值注入，调
 没有区别
 
 1.2.4 配置类
+
+注：
+
+- **直接写一个配置文件可能会遇到不能注入的情况，可以将方法放到启动类中**
+- 未完待续 .....
 
 ```java
 @Configuration  //是配置类一定要加这个注解

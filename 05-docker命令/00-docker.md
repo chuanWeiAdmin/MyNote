@@ -114,3 +114,30 @@ yum remove docker-ce docker-ce-cli containerd.io
 rm -rf /var/lib/docker
 ```
 
+
+
+
+
+## 配置镜像加速
+
+### 1. 配置命令
+
+```shell
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json <<-'EOF'
+{
+  "registry-mirrors": ["https://knt8jedy.mirror.aliyuncs.com"]
+}
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+### 2.其他镜像
+
+```
+https://mirror.ccs.tencentyun.com
+http://hub-mirror.c.163.com
+https://docker.mirrors.ustc.edu.cn
+```
+

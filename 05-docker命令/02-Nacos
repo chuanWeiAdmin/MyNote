@@ -52,3 +52,87 @@ docker run --name nacos-mysql \
 -d nacos/nacos-server
 ```
 
+
+
+### 4.通过配置文件启动
+
+```dockerfile
+docker run --name nacos-01 -it  \
+--privileged=true \
+--restart=always \
+-e MODE=standalone \
+-e PREFER_HOST_MODE=hostname \
+-e MODE=standalone \
+-e SPRING_DATASOURCE_PLATFORM=mysql \
+-e MYSQL_SERVICE_HOST=120.48.98.180  \
+-e MYSQL_SERVICE_USER=root \
+-e MYSQL_SERVICE_PASSWORD=root \
+-e MYSQL_SERVICE_PORT=9527 \
+-e MYSQL_SERVICE_DB_NAME=nacos \
+-e MYSQL_SERVICE_DB_PARAM='characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&serverTimezone=Asia/Shanghai' \
+-e MYSQL_DATABASE_NUM=1 \
+-v /root/soft/nacos/logs/:/home/nacos/logs \
+-p 1111:8848 \
+nacos/nacos-server:v2.1.0
+```
+
+
+
+
+
+## 三 .集群配置
+
+### 1.通过配置启动
+
+注：几个很坑的地方
+
+- 要连开好几个接口，并且最好是默认
+- 非默认还没有什么好方法，反正我是没有什么方法
+
+```docker run --name nacos-01 -it  \
+docker run --name nacos-01 -d  \
+--privileged=true \
+--restart=always \
+-e MODE=cluster \
+-e JVM_XMS=256m \
+-e JVM_XMX=256m \
+-e PREFER_HOST_MODE=hostname \
+-e NACOS_SERVERS=120.48.98.180:8848,101.43.158.205:8848 \
+-e NACOS_SERVER_IP=120.48.98.180 \
+-e NACOS_APPLICATION_PORT=8848 \
+-e SPRING_DATASOURCE_PLATFORM=mysql \
+-e MYSQL_SERVICE_HOST=120.48.98.180  \
+-e MYSQL_SERVICE_USER=root \
+-e MYSQL_SERVICE_PASSWORD=root \
+-e MYSQL_SERVICE_PORT=9527 \
+-e MYSQL_SERVICE_DB_NAME=nacos \
+-e MYSQL_SERVICE_DB_PARAM='characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&serverTimezone=Asia/Shanghai' \
+-e MYSQL_DATABASE_NUM=1 \
+-p 8848:8848 \
+-p 7848:7848 \
+-p 9848:9848 \
+-p 9849:9849 \
+nacos/nacos-server:v2.1.0
+```
+
+
+
+### 2.集群配置中nacos的配置
+
+```
+http {
+
+    # nacos
+    upstream nacos-cluster {
+		server 120.48.98.180:1111;
+		server 120.48.98.180:1112;
+	}
+	server {
+		listen 8848;
+		location /{
+			proxy_pass http://nacos-cluster/nacos;
+		}
+	}
+}
+```
+
