@@ -339,7 +339,7 @@ public class Student{
 
 ### 五.AOP 面向切面编程
 
-#### （1）.怎么理解面向切面编程
+#### （1）怎么理解面向切面编程
 
 1. 需要在分析项目功能时，找出切面
 2. 合理安排执行时间（**在方法前，在方法后**）
@@ -448,7 +448,7 @@ public class Student{
   public class myAspect{    
       //这里的方法一定要是实现类中的方法
       @Before(value ="execution(public void xx.xx.类名。方法名(String,..类型))")
-      public voic myTestAspect01(){
+      public void myTestAspect01(){
           System.out.println("这里是要执行的切面方法逻辑")；
       }
   }

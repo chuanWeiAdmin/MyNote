@@ -32,3 +32,17 @@ ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root';
 flush privileges;
 ```
 
+
+
+## 二 . 使用数据卷挂载
+
+```dockerfile
+docker run -d -p 3306:3306 --privileged=true \
+-v /zzyyuse/mysql/log:/var/log/mysql \
+-v /zzyyuse/mysql/data:/var/lib/mysql \
+-v /zzyyuse/mysql/conf:/etc/mysql/conf.d \
+-e MYSQL_ROOT_PASSWORD=123456  \
+--name mysql \
+mysql:5.7
+```
+

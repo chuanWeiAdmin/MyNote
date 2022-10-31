@@ -102,6 +102,7 @@
 | --------------------------- | ------------------------------------------------- |
 | sadd  key  v1  v2           | 将多个值加入到指定的集合中(有重复数据自动忽略)    |
 | smembers  key               | 获取指定集合中全部的元素                          |
+| scard    key                | 返回set中的元素个数                               |
 | sismember  key  value       | 判断元素是否在指定的集合中  (存在：1 ，不存在：0) |
 | srem  key  value1  value2   | 移除指定的元素(不存在的会自定忽略)                |
 | srandmember   key  [count ] | 从集合中随机选取一个或多个                        |
@@ -109,9 +110,9 @@
 |                             | count  <  0  随机选取的多个元素可能重复           |
 | spop  key  [ count ]        | 随机移除一个或者多个                              |
 | smove   k1  k2  member      | 把元素从  k1  移动到  k2                          |
-| sdiff  k1  k2  k3           | 获取 k1  中有，其他集合中没有的                   |
-| sinter  k1  k2  k3          | 获取所有集合中都有的元素                          |
-| sunion  k1  k2  k3          | 获取所有集合，所有元素组成的集合                  |
+| sdiff  k1  k2  k3           | 获取 k1  中有，其他集合中没有的   (差集/补集)     |
+| sinter  k1  k2  k3          | 获取所有集合中都有的元素      (交集)              |
+| sunion  k1  k2  k3          | 获取所有集合，所有元素组成的集合    (并集)        |
 |                             |                                                   |
 
 #### 4.hash 类型数据的操作命令
@@ -136,18 +137,21 @@
 
 #### 5.zset 类型数据的操作命令
 
-| 命令                                        | 操作                                             |
-| ------------------------------------------- | ------------------------------------------------ |
-| zadd  key  score(分数)  member              | 将一个或多个元素及分数加入有序集合               |
-| zrang  key  startindex  endindex            | 获取指定下标区间的元素（闭区间）                 |
-| zrevrange  key   startindex  endindex       | 从大到小排序获取元素                             |
-| zrangebyscore  key  min  max  [ withscore ] | 获取指定有序集合中指定元素区间的元素             |
-| zrem  key  value1  value2                   | 删除指定有序集合中的一个或多个元素               |
-| zcard  key                                  | 获取指定集合的长度                               |
-| zcount  key  min  max                       | 获取指定区间内元素的个数                         |
-| zrank  key  member                          | 获取*从小到大*指定有序集合指定元素的  **排位**   |
-| zrevrank  key  member                       | 获取*从大到小*的指定有序集合指定元素的  **排位** |
-| zscore  key  member(分数)                   | 获取指定元素的分数                               |
+***注意：所有的排名默认都是升序，如果要降序则在命令的Z后面添加REV即可***
+
+| 命令                           | 操作                                                  |
+| ------------------------------ | ----------------------------------------------------- |
+| zadd  key  score(分数)  member | 将一个或多个元素及分数加入有序集合                    |
+| zrem  key  value1  value2      | 删除sorted set中的一个指定元素                        |
+| zscore  key  member(分数)      | l获取sorted set中的指定元素的score值(分数)            |
+| zrank  key  member             | 获取*从小到大*指定有序集合指定元素的  **排位**        |
+| zcard  key                     | 获取指定集合的长度(个数)                              |
+| zcount  key  min  max          | 统计score值在给定范围内的所有元素的个数               |
+| zincrby key increment member   | 让sorted set中的指定元素自增，步长为指定的increment值 |
+| zrange  key min max            | 按照score排序后，获取指定排名范围内的元素             |
+| zrangebyscore key min max      | 按照score排序后，获取指定score范围内的元素            |
+| zdiff、zinter、zunion          | 求差集、交集、并集                                    |
+|                                |                                                       |
 
 ### 四.redis持久化策略
 

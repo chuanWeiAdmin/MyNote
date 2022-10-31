@@ -1,5 +1,36 @@
 # Nginx基础使用
 
+
+
+## 零.安装
+
+### 1.安装依赖---在线
+
+```shell
+yum -y install make zlib-devel gcc-c++ libtool openssl openssl-devel
+
+# 或者
+
+yum -y install gcc openssl openssl-devel pcre-devel zlib zlib-devel 
+
+```
+
+### 2.解压nginx的tar包
+
+### 3.安装后验证
+
+```
+./configure --prefix=/root/soft/nginx-1.22.0 --user=root --group=root --with-http_ssl_module 
+```
+
+### 4.安装
+
+```
+make && make install
+```
+
+
+
 ## 一.目录结构
 
 进入Nginx的主目录我们可以看到这些文件夹

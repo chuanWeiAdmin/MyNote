@@ -383,7 +383,7 @@ public class StudentService{
     
     public void put(String key,String Value){
         //向redis中存数据
-        redisTemplate.OPSForValue().set(key,value);
+        redisTemplate.opsForValue().set(key,value);
     }
     
 }
@@ -401,7 +401,7 @@ public class StudentService{
     
     public void put(String key,String Value){
         //向redis中获取数据
-        String value=(String)redisTemplate.OPSForValue().get(key);
+        String value=(String)redisTemplate.opsForValue().get(key);
     }
     
 }
@@ -561,7 +561,7 @@ public class InterceptorConfig implements WebMvcConfigurer{
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new ReqInterceptor())
             .addPathPatterns("/**")//l拦截的路径
-            .exdudePathPatterns();//排除的路径
+            .excludePathPatterns();//排除的路径
     }
 }
 ```
