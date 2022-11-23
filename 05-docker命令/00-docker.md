@@ -227,3 +227,11 @@ docker load -i consul:v0.tar
 docker tag [镜像id] [新镜像名称]:[新镜像标签]
 ```
 
+### 9.docker重启的同时重启容器
+
+```shell
+ --restart=always
+```
+
+
+

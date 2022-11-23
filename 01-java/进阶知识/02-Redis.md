@@ -153,6 +153,20 @@
 | zdiff、zinter、zunion          | 求差集、交集、并集                                    |
 |                                |                                                       |
 
+#### 6.geo 类型数据的炒作命令
+
+| 命令                                    | 操作                                                         |
+| --------------------------------------- | ------------------------------------------------------------ |
+| geoadd key lon lat member               | 添加一个地理空间信息，包含：经度（longitude）、纬度（latitude）、值（member） |
+| geodist  key member1 member2            | 计算指定的两个点之间的距离并返回                             |
+| geohash key member                      | 将指定member的坐标转为hash字符串形式并返回                   |
+| geopos key member                       | 返回指定member的坐标                                         |
+| georadius key longitude latitude radius | 指定圆心、半径，找到该圆内包含的所有member，并按照与圆心之间的距离排序后返回。6.2以后已废弃 |
+| geosearch                               | 在指定范围内搜索member，并按照与指定点之间的距离排序后返回。范围可以是圆形或矩形。6.2.新功能 |
+| geosearchstore                          | 与GEOSEARCH功能一致，不过可以把结果存储到一个指定的key。 6.2.新功能 |
+
+
+
 ### 四.redis持久化策略
 
 #### 1.RDB策略
